@@ -79,6 +79,12 @@ async def alerts(limit: int = 50):
     return [a.model_dump(mode="json") for a in engine.get_alerts(limit=limit)]
 
 
+@app.post("/api/replay/stop")
+async def stop_replay():
+    replay_status["running"] = False
+    return {"status": "stopped"}
+
+
 @app.post("/api/replay/{scenario}")
 async def replay_scenario(scenario: str):
     """Start replaying a JSONL scenario file from data/fixtures/."""
@@ -106,12 +112,6 @@ async def replay_scenario(scenario: str):
     thread = threading.Thread(target=_run, daemon=True)
     thread.start()
     return {"status": "started", "scenario": scenario, "events": len(events)}
-
-
-@app.post("/api/replay/stop")
-async def stop_replay():
-    replay_status["running"] = False
-    return {"status": "stopped"}
 
 
 @app.get("/api/scenarios")

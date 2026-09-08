@@ -68,7 +68,6 @@ def run_train():
     torch.manual_seed(0)
 
     print("[1/5] Generating synthetic benign traffic...")
-    # Generate synthetic benign events (normal SCADA + web sync patterns)
     from zero_day._synthetic import generate_benign_events
     events = generate_benign_events(duration_s=1200.0)
     stream = packets_to_feature_stream(events)
@@ -78,7 +77,6 @@ def run_train():
     win = Windower(model, window_s=10.0)
     win.fit_standardizer(stream)
 
-    n = len(stream)
     v_all, m_all, t_grid = win.windows(stream)
     n_windows = len(v_all)
     train_end = int(0.8 * n_windows)
@@ -199,3 +197,36 @@ def run_benchmark():
     print(f"Throughput: {len(events)/elapsed:.0f} events/sec")
     print(f"Alerts emitted: {metrics['alerts_emitted']}")
     print(f"{'='*60}")
+
+
+def main():
+    """Dispatch subcommands: api, replay, train, evaluate, benchmark."""
+    parser = argparse.ArgumentParser(
+        prog="zero-day",
+        description="ZERO-DAY SIH26145 — AI-Based Cyber Threat Detection",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("api", help="Launch FastAPI server")
+    sub.add_parser("replay", help="Replay JSONL events through detection engine")
+    sub.add_parser("train", help="Train NJ-ODE model on synthetic traffic")
+    sub.add_parser("evaluate", help="Evaluate detection rates on attack scenarios")
+    sub.add_parser("benchmark", help="Benchmark detection engine throughput")
+
+    args, remaining = parser.parse_known_args()
+
+    # Reset sys.argv so subcommand parsers see their own args
+    sys.argv = [sys.argv[0]] + remaining
+
+    commands = {
+        "api": run_api,
+        "replay": run_replay,
+        "train": run_train,
+        "evaluate": run_evaluate,
+        "benchmark": run_benchmark,
+    }
+    commands[args.command]()
+
+
+if __name__ == "__main__":
+    main()
