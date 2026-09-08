@@ -7,15 +7,14 @@ interface Props {
 }
 
 const threatClasses = [
-  { key: 'port_scan', label: 'Port Scan', icon: '🔍' },
-  { key: 'brute_force', label: 'Brute Force', icon: '🔨' },
-  { key: 'ddos', label: 'DDoS', icon: '🌊' },
-  { key: 'data_exfiltration', label: 'Data Exfil', icon: '📤' },
-  { key: 'lateral_movement', label: 'Lateral Move', icon: '🔄' },
-  { key: 'malware', label: 'Malware', icon: '🦠' },
-  { key: 'phishing', label: 'Phishing', icon: '🎣' },
-  { key: 'c2_communication', label: 'C2 Comm', icon: '📡' },
-  { key: 'privilege_escalation', label: 'Priv Escalation', icon: '⬆️' },
+  { key: 'volumetric_ddos', label: 'Volumetric DDoS', icon: '🌊' },
+  { key: 'reconnaissance_port_scan', label: 'Port Scan / Recon', icon: '🔍' },
+  { key: 'dga_domains', label: 'DGA Domains', icon: '🔢' },
+  { key: 'dns_tunnelling', label: 'DNS Tunnelling', icon: '🧵' },
+  { key: 'encrypted_malware', label: 'Encrypted C2 / Malware', icon: '🦠' },
+  { key: 'botnet_c2_beacon', label: 'Botnet C2 Beacon', icon: '📡' },
+  { key: 'data_exfiltration', label: 'Data Exfiltration', icon: '📤' },
+  { key: 'benign', label: 'Benign Baseline', icon: '✅' },
 ];
 
 // ─── Threat Class Map — cards with live status indicators ────────────

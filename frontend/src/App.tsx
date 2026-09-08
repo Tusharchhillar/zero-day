@@ -107,7 +107,7 @@ export default function App() {
             </div>
             <div style={styles.miniMetricRow}>
               <span style={{ color: '#4a5568', fontSize: 10 }}>EPS</span>
-              <span style={{ color: '#ffd700', fontFamily: 'monospace', fontSize: 11 }}>{metrics.events_per_second.toFixed(1)}</span>
+              <span style={{ color: '#ffd700', fontFamily: 'monospace', fontSize: 11 }}>{metrics.events_per_sec.toFixed(1)}</span>
             </div>
           </div>
         )}

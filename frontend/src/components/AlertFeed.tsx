@@ -50,8 +50,8 @@ export default function AlertFeed({ onAlertClick }: Props) {
       .then(data => {
         if (Array.isArray(data)) {
           setAlerts(prev => {
-            const existing = new Set(prev.map(a => a.timestamp + a.source_ip));
-            const newAlerts = data.filter((a: Alert) => !existing.has(a.timestamp + a.source_ip));
+            const existing = new Set(prev.map(a => a.timestamp + (a.src_ip || a.source_ip)));
+            const newAlerts = data.filter((a: Alert) => !existing.has(a.timestamp + (a.src_ip || a.source_ip)));
             return [...newAlerts, ...prev].slice(0, 200);
           });
         }
@@ -124,7 +124,7 @@ export default function AlertFeed({ onAlertClick }: Props) {
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={styles.ipText}>{alert.source_ip} → {alert.dest_ip}</span>
+                  <span style={styles.ipText}>{(alert.src_ip || alert.source_ip) || '?'} → {(alert.dst_ip || alert.dest_ip) || '?'}</span>
                   <span style={{ color: '#4a5568', fontFamily: 'monospace', fontSize: 11 }}>
                     {formatTime(alert.timestamp)}
                   </span>

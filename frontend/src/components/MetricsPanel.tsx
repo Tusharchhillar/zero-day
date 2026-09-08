@@ -30,9 +30,11 @@ export default function MetricsPanel({ metrics }: Props) {
     : [];
 
   const formatUptime = (s: number) => {
+    if (!s && s !== 0) return '0m';
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
-    return `${h}h ${m}m`;
+    const sec = Math.floor(s % 60);
+    return h > 0 ? `${h}h ${m}m` : `${m}m ${sec}s`;
   };
 
   return (
@@ -55,12 +57,12 @@ export default function MetricsPanel({ metrics }: Props) {
           </div>
           <div style={styles.metricCard}>
             <Zap size={20} color="#ffd700" />
-            <div style={{ ...styles.metricValue, color: '#ffd700' }}>{metrics.events_per_second.toFixed(1)}</div>
+            <div style={{ ...styles.metricValue, color: '#ffd700' }}>{metrics.events_per_sec.toFixed(1)}</div>
             <div style={styles.metricLabel}>EVENTS / SEC</div>
           </div>
           <div style={styles.metricCard}>
             <Clock size={20} color="#4a9eff" />
-            <div style={{ ...styles.metricValue, color: '#4a9eff' }}>{formatUptime(metrics.uptime_seconds)}</div>
+            <div style={{ ...styles.metricValue, color: '#4a9eff' }}>{formatUptime(metrics.elapsed_s)}</div>
             <div style={styles.metricLabel}>UPTIME</div>
           </div>
         </div>

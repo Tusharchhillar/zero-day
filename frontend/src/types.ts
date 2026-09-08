@@ -2,12 +2,17 @@
 
 export interface Alert {
   id?: string;
+  alert_id?: string;
   timestamp: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   threat_class: string;
   confidence: number;
-  source_ip: string;
-  dest_ip: string;
+  src_ip?: string;
+  dst_ip?: string;
+  source_ip?: string;
+  dest_ip?: string;
+  flow_id?: string;
+  detector?: string;
   evidence?: EvidenceItem[];
   features?: Record<string, unknown>;
 }
@@ -21,10 +26,10 @@ export interface EvidenceItem {
 export interface Metrics {
   events_processed: number;
   alerts_emitted: number;
-  events_per_second: number;
+  events_per_sec: number;
   severity_distribution: Record<string, number>;
-  uptime_seconds: number;
-  last_alert?: string;
+  elapsed_s: number;
+  njode_enabled?: boolean;
 }
 
 export interface Scenario {
@@ -53,15 +58,23 @@ export const SEVERITY_BG: Record<string, string> = {
 
 export const THREAT_ICONS: Record<string, string> = {
   port_scan: '🔍',
+  reconnaissance_port_scan: '🔍',
   brute_force: '🔨',
+  volumetric_ddos: '🌊',
   ddos: '🌊',
   data_exfiltration: '📤',
+  exfiltration: '📤',
   lateral_movement: '🔄',
   malware: '🦠',
+  encrypted_malware: '🦠',
   phishing: '🎣',
+  botnet_c2_beacon: '📡',
   c2_communication: '📡',
+  dga_domains: '🔢',
+  dns_tunnelling: '🧵',
   privilege_escalation: '⬆️',
   unknown: '❓',
+  benign: '✅',
 };
 
 import type { CSSProperties } from 'react';
