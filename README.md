@@ -62,8 +62,12 @@ Critical-infrastructure operators use **hardware data diodes** to copy traffic i
 
 ```bash
 # Install
-git clone https://github.com/ZERO-DAY-SIH/zero-day.git
+git clone https://github.com/Tusharchhillar/zero-day.git
 cd zero-day
+
+# Create isolated venv (Python 3.11+) and install
+python -m venv .venv
+.venv\Scripts\activate        # Windows  (or: source .venv/bin/activate on Linux/macOS)
 pip install -e ".[dev]"
 
 # Run tests (26 passing)

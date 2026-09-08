@@ -19,28 +19,32 @@ echo.
 dir /s /b tests\*.py 2>nul | findstr /v __pycache__
 echo.
 
+REM Set Python to project venv if it exists, else system
+set PY=.venv\Scripts\python.exe
+if not exist %PY% set PY=python
+
 REM 2. Run tests
 echo [2/6] Running Tests (26 expected)...
 echo ----------------------------------------
-python -m pytest tests/ -v --tb=short
+%PY% -m pytest tests/ -v --tb=short
 echo.
 
 REM 3. Benchmark throughput
 echo [3/6] Benchmarking Throughput (5000 events)...
 echo ----------------------------------------
-python -m zero_day.cli benchmark --events 5000
+%PY% -m zero_day.cli benchmark --events 5000
 echo.
 
 REM 4. Replay mixed scenario (instant)
 echo [4/6] Replaying Mixed Scenario (rules-only)...
 echo ----------------------------------------
-python -m zero_day.cli replay data\fixtures\full_scenario.jsonl --speed 0 --limit 100
+%PY% -m zero_day.cli replay data\fixtures\full_scenario.jsonl --speed 0 --limit 100
 echo.
 
 REM 5. Replay with NJ-ODE
 echo [5/6] Replaying with NJ-ODE Anomaly Detection...
 echo ----------------------------------------
-python -m zero_day.cli replay data\fixtures\full_scenario.jsonl --speed 0 --model models\njode_v1.pt
+%PY% -m zero_day.cli replay data\fixtures\full_scenario.jsonl --speed 0 --model models\njode_v1.pt
 echo.
 
 REM 6. Start API server (will block)
@@ -49,4 +53,4 @@ echo ----------------------------------------
 echo Open http://localhost:8000/docs for Swagger UI
 echo Open http://localhost:5173 for Dashboard
 echo.
-python -m zero_day.cli api --port 8000
+%PY% -m zero_day.cli api --port 8000
