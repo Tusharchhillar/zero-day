@@ -44,20 +44,31 @@ export default function AlertFeed({ onAlertClick }: Props) {
 
   useEffect(() => {
     connectWs();
-    // Fetch historical alerts from REST
-    fetch(`${API_BASE}/api/alerts?limit=50`)
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setAlerts(prev => {
-            const existing = new Set(prev.map(a => a.timestamp + (a.src_ip || a.source_ip)));
-            const newAlerts = data.filter((a: Alert) => !existing.has(a.timestamp + (a.src_ip || a.source_ip)));
-            return [...newAlerts, ...prev].slice(0, 200);
-          });
-        }
-      })
-      .catch(() => {});
-    return () => wsRef.current?.close();
+
+    // Fetch historical alerts from REST, re-poll while feed is empty
+    const fetchHistory = () => {
+      fetch(`${API_BASE}/api/alerts?limit=50`)
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setAlerts(prev => {
+              const existing = new Set(prev.map(a => a.timestamp + (a.src_ip || a.source_ip)));
+              const newAlerts = data.filter((a: Alert) => !existing.has(a.timestamp + (a.src_ip || a.source_ip)));
+              return [...newAlerts, ...prev].slice(0, 200);
+            });
+          }
+        })
+        .catch(() => {});
+    };
+    fetchHistory();
+    // Re-poll history every 5s until we have alerts (covers backend-startup races)
+    const historyTimer = setInterval(() => {
+      fetchHistory();
+    }, 5000);
+    return () => {
+      wsRef.current?.close();
+      clearInterval(historyTimer);
+    };
   }, [connectWs]);
 
   useEffect(() => {

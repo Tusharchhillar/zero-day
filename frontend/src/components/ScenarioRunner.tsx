@@ -9,18 +9,33 @@ export default function ScenarioRunner() {
   const [running, setRunning] = useState<string | null>(null);
   const [status, setStatus] = useState('');
 
-  useEffect(() => {
+  const loadScenarios = () => {
     fetch(`${API_BASE}/api/scenarios`)
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setScenarios(data.map((s: Scenario | string) =>
             typeof s === 'string' ? { name: s } : s
           ));
+          setStatus('');
+        } else {
+          throw new Error('Unexpected shape');
         }
       })
-      .catch(() => setStatus('Failed to load scenarios'));
-  }, []);
+      .catch(() => setStatus('Failed to load scenarios — retrying...'));
+  };
+
+  useEffect(() => {
+    loadScenarios();
+    // Retry every 4s until we get the list (backend may have been down at mount)
+    const retry = setInterval(() => {
+      if (scenarios.length === 0) loadScenarios();
+    }, 4000);
+    return () => clearInterval(retry);
+  }, [scenarios.length]);
 
   const startScenario = async (name: string) => {
     setStatus(`Starting ${name}...`);
