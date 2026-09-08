@@ -69,9 +69,20 @@ def run_train():
 
     print("[1/5] Generating synthetic benign traffic...")
     from zero_day._synthetic import generate_benign_events
+    from zero_day.contracts import FlowEvent
+    from zero_day.features import events_to_feature_stream
+    from datetime import datetime, timezone
     events = generate_benign_events(duration_s=1200.0)
-    stream = packets_to_feature_stream(events)
-    print(f"      {len(stream)} packets featurized")
+    # Convert to FlowEvents → flow-level features (entropy=0, matches serving)
+    flow_events = []
+    for pkt in events:
+        flow_events.append(FlowEvent(
+            timestamp=datetime.fromtimestamp(pkt.t, tz=timezone.utc),
+            src_ip="10.0.0.1", dst_ip="192.168.1.1", protocol="tcp",
+            bytes_src_to_dst=pkt.size, flow_id=f"flow-{len(flow_events)}",
+        ))
+    stream = events_to_feature_stream(flow_events)
+    print(f"      {len(stream)} packets featurized (flow-level, entropy=0)")
 
     model = NJODE(d_x=5, d_h=10)
     win = Windower(model, window_s=10.0)
@@ -105,7 +116,9 @@ def run_train():
 def run_evaluate():
     """Evaluate the model against synthetic attack traffic."""
     import torch
-    from zero_day.features import packets_to_feature_stream
+    from datetime import datetime, timezone
+    from zero_day.contracts import FlowEvent
+    from zero_day.features import events_to_feature_stream
     from zero_day.njode import NJODE
     from zero_day.windowing import Windower
 
@@ -119,9 +132,19 @@ def run_evaluate():
     from zero_day._synthetic import generate_benign_events, generate_attack_events
     from pathlib import Path
 
+    def _to_flow_events(pkts):
+        flow = []
+        for pkt in pkts:
+            flow.append(FlowEvent(
+                timestamp=datetime.fromtimestamp(pkt.t, tz=timezone.utc),
+                src_ip="10.0.0.1", dst_ip="192.168.1.1", protocol="tcp",
+                bytes_src_to_dst=pkt.size, flow_id=f"f-{len(flow)}",
+            ))
+        return flow
+
     print("[1/3] Generating evaluation data...")
     benign = generate_benign_events(duration_s=480.0)
-    ben_stream = packets_to_feature_stream(benign)
+    ben_stream = events_to_feature_stream(_to_flow_events(benign))
 
     model = NJODE.load(args.checkpoint)
     win = Windower(model, window_s=10.0)
@@ -140,7 +163,7 @@ def run_evaluate():
     results = {}
     for name, attack_type in attacks.items():
         atk_events = generate_attack_events(attack_type, duration_s=10.0)
-        atk_stream = packets_to_feature_stream(atk_events)
+        atk_stream = events_to_feature_stream(_to_flow_events(atk_events))
         v, m, t = win.windows(atk_stream)
         if len(v) == 0:
             results[name] = {"detection_rate": 0.0}

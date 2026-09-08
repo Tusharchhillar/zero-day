@@ -78,6 +78,12 @@ class Windower:
         X = np.concatenate([s.F for s in streams if len(s)], axis=0)
         self.mean_ = X.mean(0).astype(np.float32)
         self.std_ = np.maximum(X.std(0), 0.1).astype(np.float32)
+        # Binary channels (burst=3, direction=4) must NOT be standardized:
+        # std-floor 0.1 turns a 0/1 value into 0/10 → massive false scores.
+        # Keep them raw (mean=0, std=1) so 0/1 stays 0/1.
+        if self.mean_.shape[0] >= 5:
+            self.mean_[3:] = 0.0
+            self.std_[3:] = 1.0
         self.model.x_mean.copy_(torch.tensor(self.mean_))
         self.model.x_std.copy_(torch.tensor(self.std_))
         return self.mean_, self.std_
@@ -166,14 +172,14 @@ class LiveFeeder:
     def ingest_packet(self, packet: FeaturePacket) -> List[AlertEvent]:
         t = float(packet.t)
         if self._last_pkt_t is None:
-            iat = 0.0
+            iat_ms = 0.0
         else:
-            iat = max(0.0, t - self._last_pkt_t)
+            iat_ms = max(0.0, (t - self._last_pkt_t) * 1000.0)
         self._last_pkt_t = t
         entropy = shannon_entropy(packet.payload)
         direction = float(packet.direction)
         flow_hash = self._compute_flow_hash(packet.flow_key) if packet.flow_key else 0
-        features = np.array([iat, packet.size, entropy, 1.0 if iat <= 20.0 else 0.0, direction], dtype=np.float32)[:self.model.d_x]
+        features = np.array([iat_ms, packet.size, entropy, 1.0 if iat_ms <= 20.0 else 0.0, direction], dtype=np.float32)[:self.model.d_x]
         if self._first_t is None:
             self._first_t = t
             self._next_window_end = t + self.window_s
