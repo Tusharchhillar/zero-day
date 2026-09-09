@@ -40,9 +40,9 @@ export function SystemHealth({ compact = false }: { compact?: boolean }) {
         return (
           <div className="health-item" key={h.name}>
             <div className="h-ic" style={{ background: t.bg, color: t.color }}><Ic size={16} /></div>
-            <div>
+            <div className="h-body" style={{ flex: 1, minWidth: 0 }}>
               <div className="h-name">{h.name}</div>
-              <div className="h-detail">{h.detail} · uptime {h.uptime}</div>
+              <div className="h-detail">{h.detail} · <span className="mono">{h.uptime}</span></div>
             </div>
             <HealthBadge status={h.status} />
           </div>

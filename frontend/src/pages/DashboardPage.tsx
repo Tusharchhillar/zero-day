@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Play, Square } from 'lucide-react';
+import { RefreshCw, Play, Square, Activity, Siren, BarChart3 } from 'lucide-react';
 import type { StatCardData, Alert } from '../types';
 import { StatCard } from '../components/StatCard';
 import { TrafficChart } from '../components/TrafficChart';
@@ -30,7 +30,7 @@ export function DashboardPage() {
         { key: 'threats', label: 'Threats Detected', value: `${s.packetCount}`, support: 'Across 6 SIH categories', icon: 'alert', tone: 'high' },
         { key: 'critical', label: 'Critical Alerts', value: `${s.activeFlows}`, support: 'Action required', icon: 'flame', tone: 'critical' },
         { key: 'confidence', label: 'Detection Confidence', value: '88.4%', support: 'Avg across alerts', icon: 'brain', tone: 'low' },
-        { key: 'health', label: 'System Health', value: 'Healthy', support: 'All 5 components', icon: 'heart', tone: 'healthy' },
+        { key: 'health', label: 'System Health', value: 'Healthy', support: 'All engines active', icon: 'heart', tone: 'healthy' },
       ]);
     });
     scenarioService.list().then(setScenarios).catch(() => setScenarios([]));
@@ -85,7 +85,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid-main-side">
+      <div className="grid-main-side" style={{ marginBottom: 20 }}>
         <div className="card">
           <div className="card-head">
             <h3>Live Threat Alerts</h3>
@@ -95,26 +95,52 @@ export function DashboardPage() {
           </div>
           <LiveAlertList limit={8} onSelect={openAlert} />
         </div>
-        <div className="card card-pad">
-          <ThreatDistribution height={240} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div className="card card-pad">
+            <ThreatDistribution height={210} />
+          </div>
+          <div className="card card-pad">
+            <div className="card-head" style={{ padding: '0 0 12px 0', borderBottom: 'none' }}>
+              <h3 style={{ fontSize: 14 }}>System Health</h3>
+              <span className="hint" style={{ fontSize: 11 }}>Components</span>
+            </div>
+            <SystemHealth />
+          </div>
         </div>
       </div>
 
       <div className="section" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="card-head"><h3>Threat Activity</h3><span className="hint">6 SIH categories</span></div>
+          <div className="card-head">
+            <h3>Threat Activity</h3>
+            <span className="hint">6 SIH categories</span>
+          </div>
           <div style={{ padding: '12px 20px 20px' }}>
             <ThreatActivity onSelect={openThreat} />
           </div>
         </div>
       </div>
 
-      {/* Replay scenarios — drives the real ZERO-DAY backend */}
+      {/* Replay scenarios & Quick Actions */}
       <div className="section" style={{ marginTop: 20 }}>
         <div className="card card-pad">
-          <div className="chart-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            Detection Scenarios <span className="hint" style={{ color: 'var(--faint)', fontSize: 12 }}>Replay through the live detection engine</span>
-            {runningScenario && <button className="btn btn-sm btn-danger" onClick={stopReplay}><Square size={12} /> Stop</button>}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <div className="chart-title">Detection Scenarios</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                Replay test vectors through the real dual-layer AI detection engine
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {runningScenario && (
+                <button className="btn btn-sm btn-danger" onClick={stopReplay}>
+                  <Square size={12} /> Stop Replay
+                </button>
+              )}
+              <button className="btn btn-sm" onClick={() => navigate('/alerts')}><Siren size={13} /> Alerts Queue</button>
+              <button className="btn btn-sm" onClick={() => navigate('/traffic')}><Activity size={13} /> Flow Inspector</button>
+              <button className="btn btn-sm" onClick={() => navigate('/analytics')}><BarChart3 size={13} /> Analytics</button>
+            </div>
           </div>
           <div className="grid-2" style={{ gap: 10 }}>
             {!scenarios ? (
@@ -130,25 +156,14 @@ export function DashboardPage() {
                   disabled={!!runningScenario}
                   title={sc.description}
                 >
-                  <Play size={13} /> {sc.name} <span className="hint" style={{ color: 'var(--faint)', fontSize: 11 }}>{(sc.description ?? '').split('—')[1] ?? ''}</span>
+                  <Play size={13} />
+                  <span style={{ fontWeight: 600 }}>{sc.name}</span>
+                  <span className="hint" style={{ color: 'var(--muted)', fontSize: 11, marginLeft: 'auto' }}>
+                    {(sc.description ?? '').split('—')[1] ?? ''}
+                  </span>
                 </button>
               ))
             )}
-          </div>
-        </div>
-      </div>
-
-      <div className="grid-2" style={{ marginTop: 20 }}>
-        <div className="card">
-          <div className="card-head"><h3>System Health</h3><span className="hint">Components</span></div>
-          <div style={{ padding: 16 }}><SystemHealth /></div>
-        </div>
-        <div className="card">
-          <div className="card-head"><h3>Alert Overview</h3><span className="hint">Quick actions</span></div>
-          <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button className="btn" onClick={() => navigate('/alerts')}>Open Alerts queue</button>
-            <button className="btn" onClick={() => navigate('/traffic')}>Inspect traffic flows</button>
-            <button className="btn" onClick={() => navigate('/analytics')}>View analytics</button>
           </div>
         </div>
       </div>
