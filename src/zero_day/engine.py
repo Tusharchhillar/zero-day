@@ -1,17 +1,19 @@
-"""Alert engine — orchestrates rule-based + NJ-ODE detection and manages alert store.
+"""Alert engine — orchestrates rule-based + NJ-ODE detection and manages 2-tier storage.
 
-Layer 1: 6 rule-based detectors (fast, explainable, covers known patterns)
-Layer 2: NJ-ODE unsupervised anomaly detector (catches zero-day, any deviation)
-
-Both layers feed into a unified, bounded, thread-safe alert store.
+Architecture: 2-Tier "Hot + Cold" Storage Pattern
+- Tier 1 (Hot Store - RAM): High-throughput in-memory ring buffer (collections.deque)
+  enabling sub-millisecond WebSocket streaming & instantaneous dashboard updates.
+- Tier 2 (Cold Store - Disk): Persistent SQLite database (WAL mode) for forensic
+  retrieval, search filtering, and analyst lifecycle updates (New -> Resolved).
 """
 from __future__ import annotations
 
 import threading
 from collections import deque
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from zero_day.contracts import AlertV1, FlowEvent, ThreatClass
+from zero_day.db import AlertDB
 from zero_day.features import D_X, FeaturePacket, events_to_feature_stream
 from zero_day.njode import NJODE, THREAT_CLASS_MAP, attribute_error
 from zero_day.rules import (
@@ -27,7 +29,7 @@ from zero_day.windowing import LiveFeeder
 
 
 class AlertEngine:
-    """Dual-layer detection engine with bounded alert store.
+    """Dual-layer detection engine with 2-Tier (Hot RAM + Cold SQLite) storage.
 
     Usage:
         engine = AlertEngine(model_path="models/njode_v1.pt")
@@ -40,17 +42,22 @@ class AlertEngine:
     def __init__(
         self,
         model_path: Optional[str] = None,
-        max_alerts: int = 500,
+        db_path: str = "data/alerts.db",
+        max_hot_alerts: int = 1000,
         enable_njode: bool = True,
         on_alert: Optional[Callable[[AlertV1], None]] = None,
     ):
         self._lock = threading.Lock()
-        self._alerts: deque = deque(maxlen=max_alerts)
+        # Tier 1 (Hot Store in RAM)
+        self._hot_alerts: deque = deque(maxlen=max_hot_alerts)
         self._on_alert = on_alert
         self._event_count = 0
         self._alert_count = 0
         self._first_event_ts: Optional[float] = None
         self._last_event_ts: Optional[float] = None
+
+        # Tier 2 (Cold Store in SQLite WAL)
+        self.db = AlertDB(db_path=db_path)
 
         # Layer 1: Rule-based detectors
         self._rules = [
@@ -133,11 +140,20 @@ class AlertEngine:
             except Exception as e:
                 print(f"[AlertEngine] NJ-ODE error: {e}")
 
-        # Store and notify
+        # Store in Tier 1 (Hot RAM) and Tier 2 (Cold SQLite)
         for alert in all_alerts:
+            # Tier 1 (Hot)
             with self._lock:
-                self._alerts.appendleft(alert)
+                self._hot_alerts.appendleft(alert)
                 self._alert_count += 1
+
+            # Tier 2 (Cold SQLite WAL)
+            try:
+                self.db.insert_alert(alert)
+            except Exception as e:
+                print(f"[AlertEngine] Cold DB insert error: {e}")
+
+            # Notify WebSocket subscribers
             if self._on_alert:
                 try:
                     self._on_alert(alert)
@@ -146,24 +162,57 @@ class AlertEngine:
 
         return all_alerts
 
-    def get_alerts(self, limit: int = 50) -> List[AlertV1]:
+    def get_hot_alerts(self, limit: int = 50) -> List[AlertV1]:
+        """Fetch latest alerts from Tier 1 Hot RAM buffer (fastest)."""
         with self._lock:
-            return list(self._alerts)[:limit]
+            return list(self._hot_alerts)[:limit]
 
-    def get_metrics(self) -> Dict:
+    def get_alerts(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        severity: Optional[str] = None,
+        threat_class: Optional[str] = None,
+        status: Optional[str] = None,
+        search: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """Fetch alerts from Tier 2 Cold SQLite store (indexed, searchable, paginated)."""
+        return self.db.get_alerts(
+            limit=limit,
+            offset=offset,
+            severity=severity,
+            threat_class=threat_class,
+            status=status,
+            search=search,
+        )
+
+    def update_alert_status(self, alert_id: str, new_status: str) -> Optional[Dict[str, Any]]:
+        """Update lifecycle status in Cold SQLite store."""
+        return self.db.update_status(alert_id, new_status)
+
+    def get_metrics(self) -> Dict[str, Any]:
+        """Combine live hot stream rate with persistent cold storage counts."""
         elapsed = (self._last_event_ts - self._first_event_ts) if self._first_event_ts and self._last_event_ts else 0
         rate = self._event_count / max(0.001, elapsed)
+
+        # Merge Hot in-memory counts and Cold DB totals
+        db_stats = self.db.get_metrics()
         with self._lock:
-            severity_counts = {}
-            for a in self._alerts:
-                severity_counts[a.severity.value] = severity_counts.get(a.severity.value, 0) + 1
+            hot_severity: Dict[str, int] = {}
+            for a in self._hot_alerts:
+                sev_str = a.severity.value if hasattr(a.severity, "value") else str(a.severity)
+                hot_severity[sev_str] = hot_severity.get(sev_str, 0) + 1
+
         return {
             "events_processed": self._event_count,
-            "alerts_emitted": self._alert_count,
+            "alerts_emitted": max(self._alert_count, db_stats.get("total_alerts", 0)),
             "events_per_sec": round(rate, 2),
             "elapsed_s": round(elapsed, 3),
-            "severity_distribution": severity_counts,
+            "severity_distribution": db_stats.get("severity_distribution", hot_severity),
+            "category_distribution": db_stats.get("category_distribution", {}),
+            "status_distribution": db_stats.get("status_distribution", {}),
             "njode_enabled": self._enable_njode and self._feeder is not None,
+            "storage_tier": "2-Tier Hot RAM + Cold SQLite WAL",
         }
 
     def flush_njode(self) -> List[AlertV1]:

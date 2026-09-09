@@ -184,7 +184,13 @@ export function AlertsPage() {
         </div>
       </div>
 
-      <AlertDetails alertId={selected} onClose={() => setSelected(null)} />
+      <AlertDetails
+        alertId={selected}
+        onClose={() => setSelected(null)}
+        onStatusChange={() => {
+          alertService.list().then(setAlerts);
+        }}
+      />
     </>
   );
 }

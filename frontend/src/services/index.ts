@@ -83,10 +83,14 @@ interface RawAlert {
   timestamp?: string;
   threat_class?: string;
   threatClass?: string;
+  sih_category?: string;
   severity?: string;
   confidence?: number;
+  status?: string;
   src_ip?: string;
   dst_ip?: string;
+  src_port?: number;
+  dst_port?: number;
   source?: { ip: string; port: number };
   destination?: { ip: string; port: number };
   protocol?: string;
@@ -95,9 +99,9 @@ interface RawAlert {
   evidence?: { feature: string; value: number; reason: string }[];
 }
 
-/** Map a raw ZERO-DAY backend alert into the sexy UI Alert shape. */
+/** Map a raw ZERO-DAY backend alert (Hot RAM or Cold SQLite) into the UI Alert shape. */
 export function mapAlert(raw: RawAlert): Alert {
-  const sihCategory = mapThreatClassToCategory(raw.threat_class ?? raw.threatClass ?? 'botnet_c2_beacon');
+  const sihCategory = (raw.sih_category as ThreatCategory) ?? mapThreatClassToCategory(raw.threat_class ?? raw.threatClass ?? 'botnet_c2_beacon');
   const evidence: string[] = (raw.evidence ?? []).map((e) => `${e.feature} = ${e.value} (${e.reason})`);
   const contributingFeatures = (raw.evidence ?? []).map((e) => ({ name: e.feature, value: String(e.value) }));
   const detectorOutputs = [{
@@ -105,17 +109,18 @@ export function mapAlert(raw: RawAlert): Alert {
     score: raw.confidence ?? 0,
     triggered: true,
   }];
+  const alertId = raw.alert_id ?? raw.id ?? `al-${Math.random().toString(36).slice(2, 10)}`;
   return {
-    id: raw.alert_id ?? raw.id ?? `al-${Math.random().toString(36).slice(2, 10)}`,
+    id: alertId,
     sihCategory,
     threatClass: raw.threat_class ?? raw.threatClass ?? sihCategory,
     severity: (raw.severity as Alert['severity']) ?? 'HIGH',
     confidence: raw.confidence ?? 0.9,
     timestamp: raw.timestamp ?? new Date().toISOString(),
-    source: raw.source ?? { ip: raw.src_ip ?? '0.0.0.0', port: 443 },
-    destination: raw.destination ?? { ip: raw.dst_ip ?? '0.0.0.0', port: 443 },
+    source: raw.source ?? { ip: raw.src_ip ?? '0.0.0.0', port: raw.src_port ?? 443 },
+    destination: raw.destination ?? { ip: raw.dst_ip ?? '0.0.0.0', port: raw.dst_port ?? 443 },
     protocol: ((raw.protocol ?? '').toUpperCase() as Alert['protocol']) || 'TCP',
-    status: 'New',
+    status: (raw.status as Alert['status']) || 'New',
     summary: `${sihCategory} — ${raw.threat_class ?? raw.threatClass ?? ''} detected by ${raw.detector ?? 'zero_day engine'}`,
     detectionMethod: raw.detector === 'njode_unsupervised' ? 'NJ-ODE unsupervised' : 'Rules + ML hybrid',
     modelScore: raw.confidence,
@@ -167,17 +172,28 @@ export const scenarioService = {
 // --- alerts --------------------------------------------------------------
 export const alertService = {
   async list(): Promise<Alert[]> {
-    const raw = await api<RawAlert[]>('/api/alerts?limit=200');
+    const raw = await api<RawAlert[]>('/api/alerts?limit=500');
     if (raw && raw.length) return raw.map(mapAlert);
     await fakeDelay(300);
     return mockAlerts;
   },
+  async live(): Promise<Alert[]> {
+    const raw = await api<RawAlert[]>('/api/alerts/live?limit=50');
+    if (raw && raw.length) return raw.map(mapAlert);
+    return this.list();
+  },
   async byId(id: string): Promise<Alert | undefined> {
+    const raw = await api<RawAlert>(`/api/alerts/${id}`);
+    if (raw) return mapAlert(raw);
     const all = await this.list();
     return all.find((a) => a.id === id);
   },
   async updateStatus(id: string, status: Alert['status']): Promise<Alert> {
-    // ZERO-DAY backend has no status mutation endpoint; keep client-side.
+    const updated = await api<RawAlert>(`/api/alerts/${id}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    });
+    if (updated) return mapAlert(updated);
     const a = (await this.list()).find((x) => x.id === id);
     if (a) a.status = status;
     return a!;

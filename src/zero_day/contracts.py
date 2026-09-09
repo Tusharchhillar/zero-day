@@ -105,9 +105,13 @@ class AlertV1(BaseModel):
     flow_id: str = ""
     src_ip: str = ""
     dst_ip: str = ""
+    src_port: int = 443
+    dst_port: int = 443
+    protocol: str = "TCP"
     threat_class: ThreatClass
     severity: Severity = Severity.LOW
     confidence: float = Field(ge=0.0, le=1.0)
+    status: str = Field(default="New", description="Alert status (New, Investigating, Acknowledged, Resolved)")
     evidence: List[EvidenceItem] = Field(default_factory=list)
     detector: str = Field(default="", description="Detector name that produced this alert")
     model_version: str = Field(default="1.0")

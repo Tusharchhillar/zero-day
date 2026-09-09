@@ -5,7 +5,7 @@ import asyncio
 import json
 import threading
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,7 +33,7 @@ replay_status = {"running": False, "scenario": None}
 
 
 def _broadcast_alert(alert: AlertV1) -> None:
-    """Send alert to all connected WebSocket clients."""
+    """Send alert to all connected WebSocket clients in real time (Tier 1 Hot Stream)."""
     payload = json.dumps({"type": "alert", "data": alert.model_dump(mode="json")})
     dead = []
     for ws in ws_clients:
@@ -41,8 +41,9 @@ def _broadcast_alert(alert: AlertV1) -> None:
             asyncio.get_event_loop().create_task(ws.send_text(payload))
         except Exception:
             dead.append(ws)
-    for ws in dead:
-        ws_clients.remove(ws)
+        for d in dead:
+            if d in ws_clients:
+                ws_clients.remove(d)
 
 
 # ── Lifecycle ────────────────────────────────────────────────────────────────
@@ -56,7 +57,8 @@ async def startup():
         model_path = str(pt)
     engine = AlertEngine(
         model_path=model_path,
-        max_alerts=500,
+        db_path="data/alerts.db",
+        max_hot_alerts=1000,
         enable_njode=True,
         on_alert=_broadcast_alert,
     )
@@ -66,7 +68,7 @@ async def startup():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "engine": "ready"}
+    return {"status": "ok", "engine": "ready", "storage": "2-tier (hot RAM + cold SQLite WAL)"}
 
 
 @app.get("/api/metrics")
@@ -75,8 +77,51 @@ async def metrics():
 
 
 @app.get("/api/alerts")
-async def alerts(limit: int = 50):
-    return [a.model_dump(mode="json") for a in engine.get_alerts(limit=limit)]
+async def alerts(
+    limit: int = 100,
+    offset: int = 0,
+    severity: Optional[str] = None,
+    threat_class: Optional[str] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+):
+    """Retrieve alerts from Tier 2 Cold SQLite Store (searchable, paginated, indexed)."""
+    return engine.get_alerts(
+        limit=limit,
+        offset=offset,
+        severity=severity,
+        threat_class=threat_class,
+        status=status,
+        search=search,
+    )
+
+
+@app.get("/api/alerts/live")
+async def live_alerts(limit: int = 50):
+    """Retrieve latest alerts from Tier 1 Hot In-Memory Buffer (microsecond latency)."""
+    return [a.model_dump(mode="json") for a in engine.get_hot_alerts(limit=limit)]
+
+
+@app.get("/api/alerts/{alert_id}")
+async def get_alert(alert_id: str):
+    """Retrieve full forensic details for a single alert from SQLite."""
+    alert = engine.db.get_alert_by_id(alert_id)
+    if not alert:
+        return JSONResponse({"error": "Alert not found"}, status_code=404)
+    return alert
+
+
+@app.patch("/api/alerts/{alert_id}/status")
+@app.post("/api/alerts/{alert_id}/status")
+async def update_alert_status(alert_id: str, payload: dict):
+    """Update analyst lifecycle status in SQLite DB (New -> Investigating -> Acknowledged -> Resolved)."""
+    new_status = payload.get("status")
+    if not new_status:
+        return JSONResponse({"error": "Missing 'status' in body"}, status_code=400)
+    updated = engine.update_alert_status(alert_id, new_status)
+    if not updated:
+        return JSONResponse({"error": "Invalid status or alert not found"}, status_code=400)
+    return updated
 
 
 @app.post("/api/replay/stop")
