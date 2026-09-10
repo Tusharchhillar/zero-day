@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Play, Square, Activity, Siren, BarChart3 } from 'lucide-react';
+import { RefreshCw, Play, Square, Activity, Siren, BarChart3, Crosshair } from 'lucide-react';
 import type { StatCardData, Alert } from '../types';
 import { StatCard } from '../components/StatCard';
 import { TrafficChart } from '../components/TrafficChart';
@@ -131,12 +131,15 @@ export function DashboardPage() {
                 Replay test vectors through the real dual-layer AI detection engine
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
               {runningScenario && (
                 <button className="btn btn-sm btn-danger" onClick={stopReplay}>
                   <Square size={12} /> Stop Replay
                 </button>
               )}
+              <a href="http://localhost:5000" target="_blank" rel="noreferrer" className="btn btn-sm btn-primary" style={{ textDecoration: 'none' }}>
+                <Crosshair size={13} /> Pentest Mock Portal ↗
+              </a>
               <button className="btn btn-sm" onClick={() => navigate('/alerts')}><Siren size={13} /> Alerts Queue</button>
               <button className="btn btn-sm" onClick={() => navigate('/traffic')}><Activity size={13} /> Flow Inspector</button>
               <button className="btn btn-sm" onClick={() => navigate('/analytics')}><BarChart3 size={13} /> Analytics</button>

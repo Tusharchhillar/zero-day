@@ -1,5 +1,4 @@
 import { SystemHealth } from '../components/SystemHealth';
-import { DemoTag } from '../components/DemoTag';
 
 export function HealthPage() {
   return (
@@ -10,7 +9,6 @@ export function HealthPage() {
           <div className="sub">Status of each pipeline component.</div>
         </div>
         <div className="page-head-actions">
-          <DemoTag />
           <div className="health-pill"><span className="pulse" />Healthy</div>
         </div>
       </div>

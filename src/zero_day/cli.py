@@ -222,19 +222,39 @@ def run_benchmark():
     print(f"{'='*60}")
 
 
+def run_mock_target():
+    """Launch the ApexGov mock banking target server."""
+    from zero_day.db import AlertDB
+    from zero_day.mock_target.server import app, set_cold_db
+
+    parser = argparse.ArgumentParser(description="ApexGov Mock Banking Pentest Target")
+    parser.add_argument("--host", default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=5000)
+    parser.add_argument("--reload", action="store_true")
+    args = parser.parse_args()
+
+    # Pass SQLite handle directly so mock-target can persist http_logs
+    db = AlertDB("data/alerts.db")
+    set_cold_db(db)
+
+    import uvicorn
+    uvicorn.run(app, host=args.host, port=args.port)
+
+
 def main():
-    """Dispatch subcommands: api, replay, train, evaluate, benchmark."""
+    """Dispatch subcommands: api, replay, train, evaluate, benchmark, mock-target."""
     parser = argparse.ArgumentParser(
         prog="zero-day",
         description="ZERO-DAY SIH26145 — AI-Based Cyber Threat Detection",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("api", help="Launch FastAPI server")
+    sub.add_parser("api", help="Launch FastAPI detection API server")
     sub.add_parser("replay", help="Replay JSONL events through detection engine")
     sub.add_parser("train", help="Train NJ-ODE model on synthetic traffic")
     sub.add_parser("evaluate", help="Evaluate detection rates on attack scenarios")
     sub.add_parser("benchmark", help="Benchmark detection engine throughput")
+    sub.add_parser("mock-target", help="Launch mock banking target portal on port 5000")
 
     args, remaining = parser.parse_known_args()
 
@@ -247,6 +267,7 @@ def main():
         "train": run_train,
         "evaluate": run_evaluate,
         "benchmark": run_benchmark,
+        "mock-target": run_mock_target,
     }
     commands[args.command]()
 

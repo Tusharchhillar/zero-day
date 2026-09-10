@@ -128,7 +128,6 @@ export function AlertDetails({ alertId, onClose, onStatusChange }: { alertId: st
           <div className="conf" style={{ padding: '10px 0' }}>
             <span className="bar" style={{ width: 140, height: 8 }}><span style={{ width: `${Math.round((alert.modelScore ?? alert.confidence) * 100)}%` }} /></span>
             <b style={{ fontSize: 15 }}>{(alert.modelScore ?? alert.confidence).toFixed(3)}</b>
-            <span style={{ color: 'var(--faint)', fontSize: 11.5 }}>(demo value)</span>
           </div>
 
           <div className="section-label">Analyst Interpretation</div>

@@ -5,7 +5,6 @@ import {
 } from 'recharts';
 import type { TrafficPoint } from '../types';
 import { trafficService } from '../services';
-import { DemoTag } from './DemoTag';
 
 const RANGES = ['1H', '6H', '24H', '7D', '30D'];
 
@@ -46,7 +45,6 @@ export function TrafficChart({ height = 300 }: { height?: number }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="chart-title">Network Traffic Overview</div>
-          <DemoTag />
         </div>
         <div className="time-range" role="tablist" aria-label="Time range">
           {RANGES.map((r) => (

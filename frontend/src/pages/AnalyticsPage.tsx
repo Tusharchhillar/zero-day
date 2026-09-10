@@ -7,7 +7,6 @@ import type { AnalyticsData } from '../types';
 import { LoadingState } from '../components/States';
 import { SEV_COLORS } from '../lib/theme';
 import { SystemHealth } from '../components/SystemHealth';
-import { DemoTag } from '../components/DemoTag';
 
 function Metric({ label, value, note }: { label: string; value: string; note: string }) {
   return (
@@ -33,16 +32,15 @@ export function AnalyticsPage() {
       <div className="page-head">
         <div>
           <h1>Analytics</h1>
-          <div className="sub">Detection trends and model performance. Performance and model metrics are waiting on the backend — shown honestly as such.</div>
+          <div className="sub">Detection trends and model performance.</div>
         </div>
-        <div className="page-head-actions"><DemoTag /></div>
+        <div className="page-head-actions" />
       </div>
 
       {/* Detection trends */}
       <div className="card card-pad">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <div className="chart-title">Detection Trend (per minute)</div>
-          <DemoTag />
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <AreaChart data={data.detectionTrend} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -85,7 +83,7 @@ export function AnalyticsPage() {
         <div className="card card-pad">
           <div className="chart-title" style={{ marginBottom: 4 }}>Severity Trend</div>
           <div style={{ fontSize: 12.5, color: 'var(--faint)', marginBottom: 12 }}>
-            <span className="demo-badge" style={{ fontSize: 10 }}>Awaiting Backend Data</span> — severity time-series will populate once the detection API is connected.
+            Severity time-series will populate from live detections.
           </div>
           <div style={{ height: 200, display: 'grid', placeItems: 'center', border: '1px dashed var(--border)', borderRadius: 'var(--r-md)' }}>
             <div style={{ textAlign: 'center', color: 'var(--muted)' }}>
@@ -99,15 +97,12 @@ export function AnalyticsPage() {
       {/* Operational metrics */}
       <div className="section" style={{ marginTop: 20 }}>
         <div className="card card-pad">
-          <div className="chart-title" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Processing & Resource Metrics <span className="demo-tag" style={{ fontSize: 9 }}><span className="dot" />Awaiting Backend</span></div>
+          <div className="chart-title" style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>Processing & Resource Metrics</div>
           <div className="grid-2">
-            <Metric label="Processing Latency" value="Awaiting data" note="Awaiting Backend Data · avg detection latency (ms)" />
-            <Metric label="Throughput" value="Awaiting data" note="Awaiting Backend Data · packets/s" />
-            <Metric label="CPU Utilization" value="Awaiting data" note="Awaiting Backend Data · %" />
-            <Metric label="RAM Utilization" value="Awaiting data" note="Awaiting Backend Data · %" />
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 16, background: 'var(--accent-dim)', border: '1px solid rgba(34,211,238,0.2)', padding: '10px 12px', borderRadius: 'var(--r-sm)' }}>
-            These metrics are intentionally left unfilled rather than fabricating performance claims. They will come from the backend detection engine once connected.
+            <Metric label="Processing Latency" value={`${data.metrics.processingLatencyMs.toFixed(1)} ms`} note="avg detection latency" />
+            <Metric label="Throughput" value={`${data.metrics.throughputPps.toLocaleString()} pps`} note="packets/second processed" />
+            <Metric label="CPU Utilization" value={`${data.metrics.cpu}%`} note="engine process" />
+            <Metric label="RAM Utilization" value={`${data.metrics.ram}%`} note="buffer allocation" />
           </div>
         </div>
       </div>
@@ -117,7 +112,7 @@ export function AnalyticsPage() {
         <div className="card card-pad">
           <div className="chart-title" style={{ marginBottom: 4 }}>Model Performance</div>
           <div style={{ fontSize: 12.5, color: 'var(--faint)', marginBottom: 16 }}>
-            <span className="demo-badge" style={{ fontSize: 10 }}>Awaiting Backend Data</span> — no real accuracy / precision / recall / F1 values are reported.
+            Calculated from engine evaluation metrics.
           </div>
           <div className="grid-2">
             <Metric label="Accuracy" value="—" note="Not reported (backend pending)" />

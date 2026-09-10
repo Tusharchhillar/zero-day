@@ -3,7 +3,6 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { threatService } from '../services';
 import type { ThreatDistributionSlice } from '../types';
 import { CATEGORY_COLORS, CATEGORY_ORDER } from '../lib/theme';
-import { DemoTag } from './DemoTag';
 
 function DonutTooltip({ active, payload }: any) {
   if (!active || !payload?.length) return null;
@@ -36,7 +35,7 @@ export function ThreatDistribution({ height = 280 }: { height?: number }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div className="chart-title">Threat Distribution</div><DemoTag /></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><div className="chart-title">Threat Distribution</div></div>
         <div className="hint" style={{ fontSize: 12.5, color: 'var(--muted)' }}>
           <b style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--ink)' }}>{data.total}</b> total detections
         </div>

@@ -102,6 +102,15 @@ async def live_alerts(limit: int = 50):
     return [a.model_dump(mode="json") for a in engine.get_hot_alerts(limit=limit)]
 
 
+@app.post("/api/alerts/clear")
+@app.delete("/api/alerts/clear")
+@app.delete("/api/alerts")
+async def clear_all_alerts():
+    """Clear all alerts from hot buffer and cold SQLite store."""
+    deleted = engine.clear_all_alerts()
+    return {"deleted": deleted, "status": "cleared"}
+
+
 @app.get("/api/alerts/{alert_id}")
 async def get_alert(alert_id: str):
     """Retrieve full forensic details for a single alert from SQLite."""
@@ -122,6 +131,65 @@ async def update_alert_status(alert_id: str, payload: dict):
     if not updated:
         return JSONResponse({"error": "Invalid status or alert not found"}, status_code=400)
     return updated
+
+
+# ── Database Forensic Store API ───────────────────────────────────────────────
+
+@app.get("/api/db/info")
+async def get_database_info():
+    """Retrieve database metadata, storage sizes, and table metrics."""
+    return engine.db.get_db_info()
+
+
+@app.get("/api/db/table/{table_name}")
+async def get_table_content(
+    table_name: str,
+    limit: int = 50,
+    offset: int = 0,
+    search: Optional[str] = None,
+    order_by: Optional[str] = None,
+    order_dir: str = "DESC",
+):
+    """Retrieve paginated rows for a specific database table."""
+    try:
+        return engine.db.get_table_data(
+            table_name=table_name,
+            limit=min(limit, 500),
+            offset=offset,
+            search=search,
+            order_by=order_by,
+            order_dir=order_dir,
+        )
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"Database error: {str(e)}"}, status_code=500)
+
+
+@app.post("/api/db/query")
+async def run_sql_query(payload: dict):
+    """Execute a safe, read-only SQL query against the SQLite database."""
+    sql = payload.get("sql", "").strip()
+    if not sql:
+        return JSONResponse({"error": "Query string 'sql' is required"}, status_code=400)
+    limit = int(payload.get("limit", 100))
+    try:
+        return engine.db.execute_query(sql, limit=limit)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": f"SQL execution error: {str(e)}"}, status_code=500)
+
+
+@app.post("/api/ingest/flow")
+async def ingest_flow(flow: FlowEvent):
+    """Ingest a single live flow record from network sensor or mock target."""
+    alerts = engine.process_event(flow)
+    return {
+        "status": "processed",
+        "alerts_emitted": len(alerts),
+        "alerts": [a.model_dump(mode="json") for a in alerts],
+    }
 
 
 @app.post("/api/replay/stop")

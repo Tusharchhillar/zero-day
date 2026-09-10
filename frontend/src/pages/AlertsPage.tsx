@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
+import { Download, ChevronLeft, ChevronRight, RefreshCw, Trash2, Pause, Play } from 'lucide-react';
 import { alertService } from '../services';
 import type { Alert, Severity } from '../types';
 import { SeverityBadge, StatusPill } from '../components/Badge';
@@ -7,7 +7,6 @@ import { AlertDetails } from '../components/AlertDetails';
 import { EmptyState, LoadingState, ErrorState } from '../components/States';
 import { relTime, CATEGORY_ORDER } from '../lib/theme';
 import { useToast } from '../components/Toast';
-import { DemoTag } from '../components/DemoTag';
 
 const PAGE_SIZE = 10;
 const TIME_FILTERS = ['All time', 'Last 24h', 'Last 7d', 'Last 30d'];
@@ -30,13 +29,64 @@ export function AlertsPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const toast = useToast();
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      setRefreshing(true);
+      const a = await alertService.list();
+      setAlerts(a);
+      setError('');
+      setLastRefresh(new Date());
+    } catch {
+      setError('Failed to load alerts.');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let alive = true;
-    alertService.list().then((a) => alive && setAlerts(a)).catch(() => alive && setError('Failed to load alerts.'));
-    return () => { alive = false; };
-  }, []);
+    fetchAlerts();
+  }, [fetchAlerts]);
+
+  // Auto-refresh: poll every 5 seconds
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (autoRefresh) {
+      intervalRef.current = setInterval(fetchAlerts, 5000);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [autoRefresh, fetchAlerts]);
+
+  const handleClearAll = async () => {
+    if (!confirm('Clear all alerts? This cannot be undone.')) return;
+    setClearing(true);
+    try {
+      const ok = await alertService.clearAll();
+      if (ok) {
+        setAlerts([]);
+        setSelected(null);
+        setPage(0);
+        toast('success', 'All alerts cleared.');
+      } else {
+        toast('error', 'Failed to clear alerts.');
+      }
+    } catch {
+      toast('error', 'Failed to clear alerts.');
+    } finally {
+      setClearing(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     if (!alerts) return [];
@@ -99,7 +149,30 @@ export function AlertsPage() {
           <div className="sub">Detected threats across the monitored unidirectional traffic.</div>
         </div>
         <div className="page-head-actions">
-          <DemoTag />
+          {lastRefresh && (
+            <span style={{ fontSize: 11, color: 'var(--muted)' }}>
+              {lastRefresh.toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            className="btn"
+            onClick={fetchAlerts}
+            disabled={refreshing}
+            title="Refresh alerts"
+          >
+            <RefreshCw size={15} className={refreshing ? 'spin' : ''} /> Refresh
+          </button>
+          <button
+            className={`btn ${autoRefresh ? 'btn-active' : ''}`}
+            onClick={() => setAutoRefresh(!autoRefresh)}
+            title={autoRefresh ? 'Stop auto-refresh (5s)' : 'Start auto-refresh (5s)'}
+          >
+            {autoRefresh ? <Pause size={15} /> : <Play size={15} />}
+            {autoRefresh ? 'Auto' : 'Auto'}
+          </button>
+          <button className="btn btn-danger" onClick={handleClearAll} disabled={clearing || !alerts?.length}>
+            <Trash2 size={15} /> Clear All
+          </button>
           <button className="btn" onClick={exportCsv}><Download size={15} /> Export</button>
         </div>
       </div>

@@ -4,10 +4,12 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+  },
   build: {
-    // Code-split the heavy chart + icon libs so the initial shell loads
-    // fast; chart code is fetched only on the app pages. Vite 8 (rolldown)
-    // expects manualChunks as a function.
     rolldownOptions: {
       output: {
         manualChunks(id: string) {

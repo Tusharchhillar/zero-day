@@ -3,7 +3,6 @@ import { threatService } from '../services';
 import type { ThreatActivityItem } from '../types';
 import { SeverityBadge } from '../components/Badge';
 import { Modal } from '../components/Drawer';
-import { DemoTag } from '../components/DemoTag';
 import { CATEGORY_COLORS, SEV_COLORS, fmtDelta, CATEGORY_KEYS } from '../lib/theme';
 
 export function ThreatsPage() {
@@ -21,7 +20,7 @@ export function ThreatsPage() {
           <h1>Threats</h1>
           <div className="sub">The six SIH 26145 threat categories detected from unidirectional traffic.</div>
         </div>
-        <div className="page-head-actions"><DemoTag /><span className="hint" style={{ color: 'var(--faint)', fontSize: 12 }}>All counts are demo values</span></div>
+        <div className="page-head-actions" />
       </div>
 
       {items.length === 0 ? (
@@ -67,7 +66,7 @@ export function ThreatsPage() {
               ))}
             </div>
             <div style={{ marginTop: 16, fontSize: 11.5, color: 'var(--faint)' }}>
-              Category key: <span className="mono">{CATEGORY_KEYS[selected.category]}</span> · Detection values are DEMO DATA.
+              Category key: <span className="mono">{CATEGORY_KEYS[selected.category]}</span>
             </div>
           </>
         )}

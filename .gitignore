@@ -7,6 +7,13 @@ dist/
 build/
 *.egg
 
+# Environment & Secrets
+.env
+.env.*
+*.env
+frontend/.env
+frontend/.env.*
+
 # Virtual environments
 .venv/
 venv/

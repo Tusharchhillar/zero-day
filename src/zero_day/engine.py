@@ -190,6 +190,14 @@ class AlertEngine:
         """Update lifecycle status in Cold SQLite store."""
         return self.db.update_status(alert_id, new_status)
 
+    def clear_all_alerts(self) -> int:
+        """Clear all alerts from both hot buffer and cold storage. Returns count deleted."""
+        with self._lock:
+            count = len(self._hot_alerts)
+            self._hot_alerts.clear()
+        deleted = self.db.clear_all_alerts()
+        return count + deleted
+
     def get_metrics(self) -> Dict[str, Any]:
         """Combine live hot stream rate with persistent cold storage counts."""
         elapsed = (self._last_event_ts - self._first_event_ts) if self._first_event_ts and self._last_event_ts else 0

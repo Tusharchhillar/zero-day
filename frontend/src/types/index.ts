@@ -1,9 +1,8 @@
 // ---------------------------------------------------------------------------
 // SIH 26145 — Shared domain types (frontend)
 // ---------------------------------------------------------------------------
-// All types model the data the future backend/AI engine will return. Every
-// service currently returns MOCK data; these interfaces are the contract a
-// real API must satisfy so the UI does not need to change.
+// All types model the data the backend/AI engine returns. Services call the
+// real API and return empty defaults when the backend is unreachable.
 
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 export type AlertStatus = 'New' | 'Investigating' | 'Acknowledged' | 'Resolved';
@@ -115,7 +114,7 @@ export interface AnalyticsData {
     precision: number | null;
     recall: number | null;
     f1: number | null;
-    provider: 'Demo Data' | 'Awaiting Backend Data';
+    provider: string;
   };
 }
 
@@ -135,4 +134,23 @@ export interface Notifications {
   title: string;
   time: string;
   read: boolean;
+}
+
+export interface ActivityEvent {
+  id: string;
+  kind: 'detection' | 'system' | 'status';
+  severity: Severity | 'SYSTEM';
+  timestamp: string;
+  title: string;
+  description: string;
+  threatClass?: string;
+  sourceIp?: string;
+  destIp?: string;
+  protocol?: string;
+  confidence?: number;
+  alertId?: string;
+  fromStatus?: string;
+  toStatus?: string;
+  system?: string;
+  duration?: string;
 }

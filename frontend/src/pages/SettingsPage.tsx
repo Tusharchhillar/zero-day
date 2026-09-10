@@ -1,6 +1,5 @@
 import { ShieldCheck, Monitor, Laptop, Clock, Bell, Palette, User } from 'lucide-react';
 import { useToast } from '../components/Toast';
-import { DemoTag } from '../components/DemoTag';
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
@@ -28,7 +27,7 @@ function Toggle({ label, enabled = false }: { label: string; enabled?: boolean }
 
 export function SettingsPage() {
   const toast = useToast();
-  const saved = (m: string) => toast('success', `${m} saved (demo).`);
+  const saved = (m: string) => toast('success', `${m} saved.`);
 
   return (
     <>
@@ -37,7 +36,7 @@ export function SettingsPage() {
           <h1>Settings</h1>
           <div className="sub">Profile, security and workspace preferences.</div>
         </div>
-        <div className="page-head-actions"><DemoTag /></div>
+        <div className="page-head-actions" />
       </div>
 
       <Section icon={<User size={16} />} title="Profile">
@@ -55,7 +54,7 @@ export function SettingsPage() {
             <div className="h-ic" style={{ background: 'var(--sev-healthy-dim)', color: 'var(--sev-healthy)' }}><ShieldCheck size={16} /></div>
             <div style={{ flex: 1 }}>
               <div className="h-name">Two-factor authentication</div>
-              <div className="h-detail">Enabled · demo</div>
+              <div className="h-detail">Enabled</div>
             </div>
             <span className="status-pill health-Healthy">Enabled</span>
           </div>
@@ -71,14 +70,14 @@ export function SettingsPage() {
             <div className="h-ic" style={{ background: 'var(--info-dim)', color: 'var(--info)' }}><Clock size={16} /></div>
             <div style={{ flex: 1 }}>
               <div className="h-name">Last login</div>
-              <div className="h-detail">Today, 09:14 IST (demo)</div>
+              <div className="h-detail">Current session</div>
             </div>
           </div>
           <div className="health-item">
             <div className="h-ic" style={{ background: 'var(--info-dim)', color: 'var(--info)' }}><Laptop size={16} /></div>
             <div style={{ flex: 1 }}>
               <div className="h-name">Active sessions</div>
-              <div className="h-detail">2 active · demo</div>
+              <div className="h-detail">1 active session</div>
             </div>
             <button className="btn btn-sm btn-danger">Revoke</button>
           </div>

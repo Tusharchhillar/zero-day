@@ -4,7 +4,6 @@ import { StatCard } from '../components/StatCard';
 import type { TrafficStats } from '../types';
 import { trafficService } from '../services';
 import { LoadingState } from '../components/States';
-import { DemoTag } from '../components/DemoTag';
 
 export function TrafficPage() {
   const [stats, setStats] = useState<TrafficStats | null>(null);
@@ -28,7 +27,7 @@ export function TrafficPage() {
           <h1>Traffic</h1>
           <div className="sub">Volume, flows and protocol mix across monitored unidirectional traffic.</div>
         </div>
-        <div className="page-head-actions"><DemoTag /></div>
+        <div className="page-head-actions" />
       </div>
 
       {!stats ? (
@@ -46,7 +45,7 @@ export function TrafficPage() {
       <div className="grid-2">
         {!stats ? <LoadingState /> : (
           <div className="card card-pad">
-            <div className="chart-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>Top Source Endpoints <DemoTag /></div>
+            <div className="chart-title" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>Top Source Endpoints</div>
             {stats.topSources.map((s, i) => (
               <div key={s.name} style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>

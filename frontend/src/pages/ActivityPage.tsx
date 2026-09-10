@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { activityService } from '../services';
-import type { ActivityEvent } from '../data/mockActivity';
+import type { ActivityEvent } from '../types';
 import { SeverityBadge } from '../components/Badge';
 import { LoadingState, EmptyState, ErrorState } from '../components/States';
 import { relTime, SEV_COLORS } from '../lib/theme';
@@ -65,16 +65,14 @@ export function ActivityPage() {
       <div className="page-head">
         <div>
           <h1>Activity</h1>
-          <div className="sub">A live SOC event timeline — threat detections, system events and alert status changes. All entries are demo data.</div>
+          <div className="sub">A live SOC event timeline — threat detections, system events and alert status changes.</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-head" style={{ flexWrap: 'wrap', gap: 12 }}>
           <h3>Event Timeline</h3>
-          <span className="demo-badge" style={{ fontSize: 9.5 }}><span className="dot" />DEMO DATA</span>
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span className="demo-tag"><span className="dot" />Live indicator</span>
             <span style={{ fontSize: 12, color: 'var(--muted)' }}>now</span>
           </div>
         </div>
