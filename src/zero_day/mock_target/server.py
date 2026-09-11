@@ -220,13 +220,12 @@ async def passive_tap_middleware(request: Request, call_next):
 
 # ── Portal HTML Interface ───────────────────────────────────────────────────
 
-PORTAL_HTML = """
-<!DOCTYPE html>
+PORTAL_HTML = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ApexGov — Enterprise Banking & GovCloud Gateway</title>
+  <title>ApexGov Treasury — Enterprise Banking & GovCloud Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -234,47 +233,89 @@ PORTAL_HTML = """
     :root { --bg:#070d19; --surface:#0e172a; --surface-2:#1e293b; --surface-3:#334155; --border:rgba(148,163,184,.15); --accent:#38bdf8; --accent-glow:rgba(56,189,248,.2); --success:#10b981; --warning:#f59e0b; --danger:#ef4444; --text:#f8fafc; --text-muted:#94a3b8; --mono:'JetBrains Mono',monospace; --font:'Plus Jakarta Sans',sans-serif; }
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;display:flex;flex-direction:column}
-    header{background:rgba(14,23,42,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
+    a{color:var(--accent);text-decoration:none}
+    header{background:rgba(14,23,42,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
     .brand{display:flex;align-items:center;gap:12px}
     .brand-badge{background:linear-gradient(135deg,#0284c7,#38bdf8);color:#fff;font-weight:800;font-size:14px;padding:6px 10px;border-radius:8px;letter-spacing:.5px}
     .brand-title{font-size:16px;font-weight:700;color:#fff}
     .brand-sub{font-size:12px;color:var(--text-muted)}
-    .header-status{display:flex;align-items:center;gap:16px}
-    .pill{font-size:12px;padding:4px 12px;border-radius:9999px;background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(52,211,153,.3);display:flex;align-items:center;gap:6px}
+    nav{display:flex;gap:6px}
+    .nav-link{color:var(--text-muted);font-size:13px;font-weight:600;padding:8px 14px;border-radius:8px;transition:all .2s;cursor:pointer;background:transparent;border:none;font-family:var(--font)}
+    .nav-link:hover{color:var(--text);background:var(--surface-2)}
+    .nav-link.active{color:var(--accent);background:rgba(56,189,248,.12)}
+    .header-right{display:flex;align-items:center;gap:14px}
+    .pill{font-size:12px;padding:4px 12px;border-radius:9999px;background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(52,211,153,.3);display:flex;align-items:center;gap:6px;white-space:nowrap}
     .pulse-dot{width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-    main{padding:32px;max-width:1400px;margin:0 auto;width:100%;display:grid;grid-template-columns:1fr 420px;gap:28px;flex:1}
+    main{flex:1}
+    .page{display:none;padding:32px;max-width:1400px;margin:0 auto;width:100%;animation:fade .25s ease}
+    .page.active{display:block}
+    @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+    .hero{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:24px;flex-wrap:wrap}
+    .hero h1{font-size:26px;font-weight:800;letter-spacing:-.5px}
+    .hero p{color:var(--text-muted);font-size:14px;margin-top:6px;line-height:1.6}
+    .btn{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:10px 16px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn:hover{background:rgba(56,189,248,.12);border-color:rgba(56,189,248,.5);color:var(--accent)}
+    .btn-primary{background:linear-gradient(135deg,#0284c7,#38bdf8);border:none;color:#fff}
+    .btn-primary:hover{background:linear-gradient(135deg,#0369a1,#0ea5e9);color:#fff}
+    .btn-danger:hover{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);color:#fca5a5}
+    .grid{display:grid;gap:20px}
+    .cards-3{grid-template-columns:repeat(3,1fr)}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:0 4px 20px rgba(0,0,0,.25)}
     .card-title{font-size:15px;font-weight:700;margin-bottom:16px;color:#fff;display:flex;align-items:center;justify-content:space-between}
-    .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-    .stat-box{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px}
-    .stat-lbl{font-size:12px;color:var(--text-muted);margin-bottom:4px}
-    .stat-val{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--accent)}
-    .tx-table{width:100%;border-collapse:collapse;font-size:13px}
-    .tx-table th{text-align:left;padding:10px;color:var(--text-muted);border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
-    .tx-table td{padding:12px 10px;border-bottom:1px solid rgba(148,163,184,.08)}
+    .stat-box{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:18px}
+    .stat-lbl{font-size:12px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+    .stat-val{font-size:22px;font-weight:800;font-family:var(--mono);color:var(--accent)}
+    .stat-val.green{color:var(--success)}
+    .stat-val.red{color:var(--danger)}
+    .stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{text-align:left;padding:10px;color:var(--text-muted);border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+    td{padding:12px 10px;border-bottom:1px solid rgba(148,163,184,.08)}
     .mono{font-family:var(--mono)}
+    .pos{color:var(--success);font-family:var(--mono);font-weight:600}
+    .neg{color:var(--danger);font-family:var(--mono);font-weight:600}
+    .chip{font-size:11px;padding:3px 10px;border-radius:9999px;font-weight:600}
+    .chip-ok{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(52,211,153,.3)}
+    .chip-warn{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.3)}
+    .chip-danger{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+    .accounts-grid{grid-template-columns:repeat(3,1fr)}
+    .acct-card{background:linear-gradient(145deg,#0e172a,#111c33);border:1px solid var(--border);border-radius:16px;padding:22px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s}
+    .acct-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#38bdf8,#10b981)}
+    .acct-card:hover{transform:translateY(-2px);border-color:rgba(56,189,248,.4)}
+    .acct-name{font-size:13px;color:var(--text-muted);font-weight:600}
+    .acct-num{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-top:2px}
+    .acct-bal{font-size:22px;font-weight:800;font-family:var(--mono);color:#fff;margin-top:14px}
+    .acct-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+    .acct-tag{font-size:10.5px;padding:3px 8px;border-radius:6px;background:rgba(56,189,248,.1);color:var(--accent);font-family:var(--mono)}
+    .acct-tag.gold{background:rgba(245,158,11,.1);color:#fbbf24}
+    .acct-tag.green{background:rgba(16,185,129,.1);color:#34d399}
+    .split{display:grid;grid-template-columns:1.6fr 1fr;gap:20px;align-items:start}
+    .form-grid{display:flex;flex-direction:column;gap:12px}
+    .field label{font-size:12px;color:var(--text-muted);display:block;margin-bottom:6px;font-weight:600}
+    .field input,.field select{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px}
+    .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
     .red-console{background:#0f172a;border:1px solid rgba(239,68,68,.3);position:relative;overflow:hidden}
     .red-console::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#ef4444,#f59e0b,#ef4444)}
+    .lab-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
     .atk-grid{display:flex;flex-direction:column;gap:10px}
     .atk-btn{background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:12px 16px;border-radius:10px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .2s}
     .atk-btn:hover:not(:disabled){background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);color:#fca5a5;transform:translateY(-1px)}
     .atk-btn:disabled{opacity:.5;cursor:not-allowed}
     .atk-badge{font-size:10px;padding:2px 8px;border-radius:6px;background:rgba(239,68,68,.2);color:#fca5a5;font-family:var(--mono);white-space:nowrap}
-    .terminal-output{background:#030712;border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:11.5px;color:#a7f3d0;height:260px;overflow-y:auto;margin-top:16px;line-height:1.5;white-space:pre-wrap}
-    .soc-link{display:inline-flex;align-items:center;gap:6px;color:var(--accent);text-decoration:none;font-size:12px;font-weight:600;margin-top:14px}
-    .soc-link:hover{text-decoration:underline}
-    .vuln-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-    .vuln-tag{font-family:var(--mono);font-size:10.5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);color:var(--warning);background:rgba(245,158,11,.08)}
+    .terminal-output{background:#030712;border:1px solid var(--border);border-radius:10px;padding:14px;font-family:var(--mono);font-size:11.5px;color:#a7f3d0;height:300px;overflow-y:auto;margin-top:16px;line-height:1.5;white-space:pre-wrap}
     .exploit-input{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px 12px;font-family:var(--mono);font-size:12px;margin-bottom:10px}
     .exploit-input:focus{outline:none;border-color:var(--accent)}
-    .http-logs{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:12px}
     .http-logs th{text-align:left;padding:6px;color:var(--text-muted);border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.4px}
     .http-logs td{padding:6px;border-bottom:1px solid rgba(148,163,184,.06);font-family:var(--mono)}
     .flag-sqli{color:var(--danger)}
     .flag-xss{color:var(--warning)}
     .flag-traversal{color:var(--accent)}
     .flag-clean{color:var(--text-muted)}
+    .security-strip{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+    .sec-tag{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);padding:8px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
+    .sec-tag b{color:var(--text)}
+    @media(max-width:1000px){.cards-3,.accounts-grid,.lab-layout,.split{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -283,106 +324,221 @@ PORTAL_HTML = """
   <div class="brand">
     <div class="brand-badge">APEX</div>
     <div>
-      <div class="brand-title">ApexGov Gateway & Treasury System</div>
-      <div class="brand-sub">Government Enclave IP Range: 192.168.1.100/24</div>
+      <div class="brand-title">ApexGov Treasury & Gateway</div>
+      <div class="brand-sub">Enterprise Banking & GovCloud · Enclave 192.168.1.100/24</div>
     </div>
   </div>
-  <div class="header-status">
+  <nav>
+    <button class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-link" data-page="accounts" onclick="showPage('accounts')">Accounts</button>
+    <button class="nav-link" data-page="transfers" onclick="showPage('transfers')">Transfers</button>
+    <button class="nav-link" data-page="security" onclick="showPage('security')">Security Lab</button>
+  </nav>
+  <div class="header-right">
     <div class="pill"><span class="pulse-dot"></span> Protected by ZERO-DAY Passive Sensor</div>
-    <a href="http://localhost:5173/#/alerts" target="_blank" class="soc-link">Open SOC Dashboard ↗</a>
+    <a href="http://localhost:5173/#/alerts" target="_blank" class="btn">Open SOC Dashboard ↗</a>
   </div>
 </header>
 
 <main>
-  <div style="display:flex;flex-direction:column;gap:24px;">
-    <div class="card">
-      <div class="card-title"><span>Enterprise Treasury Balances</span><span style="font-size:12px;color:var(--text-muted);font-weight:normal">Live Vault Settlement</span></div>
-      <div class="stat-row">
-        <div class="stat-box"><div class="stat-lbl">Central Treasury Vault</div><div class="stat-val">₹ 1,482.40 Cr</div></div>
-        <div class="stat-box"><div class="stat-lbl">GovCloud Direct Ingest</div><div class="stat-val">42.8 Gbps</div></div>
-        <div class="stat-box"><div class="stat-lbl">Active Inter-Bank Sessions</div><div class="stat-val">1,249</div></div>
+  <!-- DASHBOARD -->
+  <section class="page active" id="page-dashboard">
+    <div class="hero">
+      <div>
+        <h1>Good day, Treasury Officer</h1>
+        <p>Your institution's funds are safeguarded by the ZERO-DAY passive sensor across the ApexGov optical data diode.</p>
       </div>
-      <div class="card-title" style="margin-top:10px;">Recent Wire Settlement Transactions</div>
-      <table class="tx-table">
-        <thead><tr><th>TX ID</th><th>Origin Host</th><th>Beneficiary Enclave</th><th>Amount</th><th>Protocol</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td class="mono">TX-90214-IN</td><td class="mono">10.0.1.15:443</td><td class="mono">192.168.1.100:5000</td><td class="mono">₹ 45,00,000</td><td>TLS 1.3</td><td style="color:var(--success)">Settled</td></tr>
-          <tr><td class="mono">TX-90215-IN</td><td class="mono">10.0.2.88:443</td><td class="mono">192.168.1.100:5000</td><td class="mono">₹ 1,20,00,000</td><td>TLS 1.3</td><td style="color:var(--success)">Settled</td></tr>
-          <tr><td class="mono">TX-90216-IN</td><td class="mono">10.0.3.52:443</td><td class="mono">192.168.1.100:5000</td><td class="mono">₹ 8,75,000</td><td>TLS 1.3</td><td style="color:var(--success)">Settled</td></tr>
-        </tbody>
-      </table>
+      <button class="btn" onclick="showPage('transfers')">+ New Transfer</button>
+    </div>
+    <div class="grid cards-3">
+      <div class="stat-box"><div class="stat-lbl">Total Treasury Vault</div><div class="stat-val">₹ 1,482.40 Cr</div><div class="stat-sub">▲ 2.4% this quarter</div></div>
+      <div class="stat-box"><div class="stat-lbl">Available Balance</div><div class="stat-val green">₹ 621.90 Cr</div><div class="stat-sub">Across 3 active vaults</div></div>
+      <div class="stat-box"><div class="stat-lbl">Pending Settlement</div><div class="stat-val red">₹ 84.25 Cr</div><div class="stat-sub">13 wires in queue</div></div>
     </div>
 
-    <div class="card">
-      <div class="card-title"><span>GovCloud File Transfer & DNS Resolver Portal</span><span style="font-size:12px;color:var(--text-muted);font-weight:normal">Exploitable Lab Target</span></div>
-      <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;">
-        All outbound and inbound communications on this gateway cross a hardware optical data diode into the
-        <strong>ZERO-DAY Unidirectional Cyber Intelligence Enclave</strong>. Every request below is passively logged
-        and any anomalous volumetric floods, covert tunnels, beacon heartbeats, or scan fan-outs are detected in real time.
-      </p>
-      <div class="vuln-list">
-        <span class="vuln-tag">V1 /api/login · Brute-Force</span>
-        <span class="vuln-tag">V2 /api/transactions · SQLi</span>
-        <span class="vuln-tag">V3 /search · XSS</span>
-        <span class="vuln-tag">V4 /api/dns-lookup · Open DNS / DGA</span>
-        <span class="vuln-tag">V5 /api/upload · Path Traversal</span>
-        <span class="vuln-tag">V6 /api/vault · Weak TLS</span>
-        <span class="vuln-tag">V7 /api/admin · Weak Auth</span>
-        <span class="vuln-tag">V8 /api/probe · Port Recon</span>
-      </div>
-
-      <div class="card-title" style="margin-top:20px;">Live Request Log (persisted to SQLite)<button onclick="loadLogs()" style="background:var(--surface-2);border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--mono)">↻ Refresh</button></div>
-      <div id="logContainer" style="max-height:220px;overflow-y:auto;">
-        <table class="http-logs"><thead><tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Flag</th></tr></thead><tbody id="logBody"><tr><td colspan="6" style="color:var(--text-muted)">No requests yet — launch an attack below.</td></tr></tbody></table>
+    <div class="grid" style="margin-top:20px">
+      <div class="card">
+        <div class="card-title"><span>Recent Wire Settlements</span><span style="font-size:12px;color:var(--text-muted);font-weight:normal">Live Vault Activity</span></div>
+        <table>
+          <thead><tr><th>TX ID</th><th>Origin Host</th><th>Beneficiary Enclave</th><th>Amount</th><th>Protocol</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">TX-90214-IN</td><td class="mono">10.0.1.15:443</td><td class="mono">192.168.1.100:5000</td><td class="mono pos">₹ 45,00,000</td><td>TLS 1.3</td><td><span class="chip chip-ok">Settled</span></td></tr>
+            <tr><td class="mono">TX-90215-IN</td><td class="mono">10.0.2.88:443</td><td class="mono">192.168.1.100:5000</td><td class="mono pos">₹ 1,20,00,000</td><td>TLS 1.3</td><td><span class="chip chip-ok">Settled</span></td></tr>
+            <tr><td class="mono">TX-90216-IN</td><td class="mono">10.0.3.52:443</td><td class="mono">192.168.1.100:5000</td><td class="mono pos">₹ 8,75,000</td><td>TLS 1.3</td><td><span class="chip chip-ok">Settled</span></td></tr>
+            <tr><td class="mono">TX-90217-IN</td><td class="mono">10.0.4.88:443</td><td class="mono">192.168.1.100:5000</td><td class="mono pos">₹ 2,60,00,000</td><td>TLS 1.3</td><td><span class="chip chip-warn">Pending</span></td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
 
-  <div class="card red-console">
-    <div class="card-title" style="color:#fca5a5;"><span>🎯 Red Team Pentest Console</span><span class="atk-badge">LIVE SENSORS</span></div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">Fire real exploits against the gateway. Each request is logged to SQLite and detected on the SOC dashboard.</p>
-
-    <input type="text" id="payloadInput" class="exploit-input" placeholder="Custom payload (e.g. '; DROP TABLE users--)" value="' OR 1=1--">
-
-    <div class="atk-grid">
-      <button class="atk-btn" onclick="triggerTest('brute_force')"><span>🔑 Login Brute-Force (V1)</span><span class="atk-badge">DDoS</span></button>
-      <button class="atk-btn" onclick="triggerTest('sql_injection')"><span>💉 SQL Injection Transactions (V2)</span><span class="atk-badge">Exfil</span></button>
-      <button class="atk-btn" onclick="triggerTest('xss')"><span>🧩 Reflected XSS Search (V3)</span><span class="atk-badge">Log</span></button>
-      <button class="atk-btn" onclick="triggerTest('open_dns')"><span>🧵 Open DNS / DGA Probe (V4)</span><span class="atk-badge">DGA</span></button>
-      <button class="atk-btn" onclick="triggerTest('path_traversal')"><span>📂 Path Traversal Upload (V5)</span><span class="atk-badge">Exfil</span></button>
-      <button class="atk-btn" onclick="triggerTest('weak_tls')"><span>🔒 Weak TLS ClientHello (V6)</span><span class="atk-badge">TLS</span></button>
-      <button class="atk-btn" onclick="triggerTest('weak_auth')"><span>📡 Weak Admin Token Heartbeat (V7)</span><span class="atk-badge">Beacon</span></button>
-      <button class="atk-btn" onclick="triggerTest('port_probe')"><span>🔍 Multi-Port Recon Probe (V8)</span><span class="atk-badge">Scan</span></button>
+    <div class="security-strip">
+      <span class="sec-tag">🛡️ <b>ZERO-DAY Engine:</b> Ready</span>
+      <span class="sec-tag">🔎 <b>AI Detection:</b> NJ-ODE Active</span>
+      <span class="sec-tag">⚡ <b>Data Diode:</b> Unidirectional</span>
+      <span class="sec-tag">🗄️ <b>Audit Log:</b> SQLite Cold Store</span>
     </div>
+  </section>
 
-    <div class="terminal-output" id="termOutput">[SYSTEM READY] https://localhost:5000
+  <!-- ACCOUNTS -->
+  <section class="page" id="page-accounts">
+    <div class="hero">
+      <div>
+        <h1>Your Accounts</h1>
+        <p>Manage treasury vaults and beneficiary enclaves under ApexGov custody.</p>
+      </div>
+    </div>
+    <div class="grid accounts-grid">
+      <div class="acct-card">
+        <div class="acct-name">Central Treasury Vault</div>
+        <div class="acct-num">•••• 4821 · INR</div>
+        <div class="acct-bal">₹ 8,52,40,00,000</div>
+        <div class="acct-foot"><span class="acct-tag gold">Corporate</span><span class="mono" style="font-size:12px;color:var(--text-muted)">Active</span></div>
+      </div>
+      <div class="acct-card">
+        <div class="acct-name">GovCloud Direct Ingest</div>
+        <div class="acct-num">•••• 9033 · INR</div>
+        <div class="acct-bal">₹ 4,90,18,00,000</div>
+        <div class="acct-foot"><span class="acct-tag">Operational</span><span class="mono" style="font-size:12px;color:var(--text-muted)">42.8 Gbps</span></div>
+      </div>
+      <div class="acct-card">
+        <div class="acct-name">Inter-Bank Settlement</div>
+        <div class="acct-num">•••• 1157 · INR</div>
+        <div class="acct-bal">₹ 1,39,82,00,000</div>
+        <div class="acct-foot"><span class="acct-tag green">Settlements</span><span class="mono" style="font-size:12px;color:var(--text-muted)">1,249 sessions</span></div>
+      </div>
+    </div>
+    <div class="grid" style="margin-top:20px">
+      <div class="card">
+        <div class="card-title"><span>Account Activity</span></div>
+        <table>
+          <thead><tr><th>Date</th><th>Description</th><th>Reference</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">11 Sep 2026</td><td>Inter-bank wire — TX-90214</td><td class="mono">NEFT/IN/4821</td><td class="mono pos">+₹ 45,00,000</td><td><span class="chip chip-ok">Completed</span></td></tr>
+            <tr><td class="mono">11 Sep 2026</td><td>GovCloud ingest settlement</td><td class="mono">IMPS/IN/9033</td><td class="mono pos">+₹ 1,20,00,000</td><td><span class="chip chip-ok">Completed</span></td></tr>
+            <tr><td class="mono">10 Sep 2026</td><td>Vault transfer outgoing</td><td class="mono">RTGS/IN/1157</td><td class="mono neg">−₹ 8,75,000</td><td><span class="chip chip-ok">Completed</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- TRANSFERS -->
+  <section class="page" id="page-transfers">
+    <div class="hero">
+      <div>
+        <h1>New Transfer</h1>
+        <p>Authorize a wire settlement. Every request is passively logged and inspected by the ZERO-DAY sensor.</p>
+      </div>
+      <span class="pill"><span class="pulse-dot"></span> Sensor monitoring active</span>
+    </div>
+    <div class="split">
+      <div class="card">
+        <div class="card-title"><span>Transfer Details</span></div>
+        <div class="form-grid">
+          <div class="field"><label>From Account</label><select><option>Central Treasury Vault •••• 4821</option><option>GovCloud Direct Ingest •••• 9033</option><option>Inter-Bank Settlement •••• 1157</option></select></div>
+          <div class="field"><label>Beneficiary Enclave</label><input type="text" value="192.168.1.120:5000"></div>
+          <div class="field"><label>Amount (₹)</label><input type="text" value="₹ 1,000,000"></div>
+          <div class="field"><label>Purpose</label><input type="text" value="Daily treasury settlement"></div>
+          <button class="btn btn-primary" style="margin-top:6px" onclick="sendTransfer()">Authorize Transfer</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>Transfer Summary</span></div>
+        <div class="grid" style="gap:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)"><span>Channel</span><b class="mono" style="color:var(--text)">RTGS / TLS 1.3</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)"><span>Network</span><b class="mono" style="color:var(--text)">ApexGov Gateway</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)"><span>Ingress Tap</span><b class="mono" style="color:var(--success)">Passive Diode</b></div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted)"><span>Audit</span><b class="mono" style="color:var(--text)">SQLite cold store</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECURITY LAB -->
+  <section class="page" id="page-security">
+    <div class="hero">
+      <div>
+        <h1>Security Lab · Red Team Console</h1>
+        <p>Fire real exploits against the gateway. Each request is tapped, logged to SQLite, and detected on the SOC dashboard in real time.</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <span class="pill" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171"><span class="pulse-dot" style="background:#ef4444"></span> LIVE SENSORS</span>
+        <a href="http://localhost:5173/#/alerts" target="_blank" class="btn btn-danger">View Alerts ↗</a>
+      </div>
+    </div>
+    <div class="lab-layout">
+      <div class="red-console card">
+        <div class="card-title" style="color:#fca5a5;"><span>🎯 Attack Vectors</span><span class="atk-badge">/attack</span></div>
+        <input type="text" id="payloadInput" class="exploit-input" placeholder="Custom payload (e.g. '; DROP TABLE users--)" value="' OR 1=1--">
+        <div class="atk-grid">
+          <button class="atk-btn" onclick="triggerTest('brute_force')"><span>🔑 Login Brute-Force (V1)</span><span class="atk-badge">DDoS</span></button>
+          <button class="atk-btn" onclick="triggerTest('sql_injection')"><span>💉 SQL Injection Transactions (V2)</span><span class="atk-badge">Exfil</span></button>
+          <button class="atk-btn" onclick="triggerTest('xss')"><span>🧩 Reflected XSS Search (V3)</span><span class="atk-badge">Log</span></button>
+          <button class="atk-btn" onclick="triggerTest('open_dns')"><span>🧵 Open DNS / DGA Probe (V4)</span><span class="atk-badge">DGA</span></button>
+          <button class="atk-btn" onclick="triggerTest('path_traversal')"><span>📂 Path Traversal Upload (V5)</span><span class="atk-badge">Exfil</span></button>
+          <button class="atk-btn" onclick="triggerTest('weak_tls')"><span>🔒 Weak TLS ClientHello (V6)</span><span class="atk-badge">TLS</span></button>
+          <button class="atk-btn" onclick="triggerTest('weak_auth')"><span>📡 Weak Admin Token Heartbeat (V7)</span><span class="atk-badge">Beacon</span></button>
+          <button class="atk-btn" onclick="triggerTest('port_probe')"><span>🔍 Multi-Port Recon Probe (V8)</span><span class="atk-badge">Scan</span></button>
+        </div>
+        <div class="terminal-output" id="termOutput">[SYSTEM READY] https://localhost:5000
 Passive Data Diode Sensor active -> Forwarding to ZERO-DAY at http://localhost:8000
 Click any attack above to initiate real penetration test...
 </div>
-  </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span>Live Request Log (SQLite)</span><button onclick="loadLogs()" style="background:var(--surface-2);border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--mono)">↻ Refresh</button></div>
+        <div id="logContainer" style="max-height:420px;overflow-y:auto;">
+          <table class="http-logs"><thead><tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Flag</th></tr></thead><tbody id="logBody"><tr><td colspan="6" style="color:var(--text-muted)">No requests yet — launch an attack.</td></tr></tbody></table>
+        </div>
+        <div class="vuln-note" style="margin-top:16px;padding:14px;border:1px dashed var(--border);border-radius:10px">
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
+            <b style="color:var(--warning)">Detection pipeline:</b> every request is classified (SQLi / XSS / traversal / brute-force / DGA) by the tap middleware, then the flow metadata is pushed to <span class="mono">/attack</span> handlers which forward to the ZERO-DAY engine and replay canonical patterns.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <script>
   const term = document.getElementById('termOutput');
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelector(`.nav-link[data-page="${id}"]`).classList.add('active');
+    if (id === 'security') loadLogs();
+  }
   function log(msg) {
     const ts = new Date().toLocaleTimeString();
-    term.innerHTML += `\\n[${ts}] ${msg}`;
+    term.innerHTML += `\n[${ts}] ${msg}`;
     term.scrollTop = term.scrollHeight;
   }
-
   async function triggerTest(attackKey) {
     log(`Launching: ${attackKey}...`);
     try {
-      const res = await fetch(`/sim/attack/${attackKey}`, { method: 'POST' });
+      const res = await fetch(`/attack/${attackKey}`, { method: 'POST' });
       const data = await res.json();
-      log(`✓ ${data.vulnerability || attackKey}: ${data.events} requests injected →  ${data.events} logged to SQLite.`);
+      log(`✓ ${data.vulnerability || attackKey}: ${data.events} requests injected → logged to SQLite.`);
       log(`→ ZERO-DAY AI Engine: ${data.status.toUpperCase()} · flagged ${data.flagged||0} requests.`);
       setTimeout(() => loadLogs(), 400);
     } catch (err) {
       log(`! Attack trigger failed: ${err.message}`);
     }
   }
-
+  async function sendTransfer() {
+    const term = document.getElementById('termOutput');
+    logAvailable: if (document.getElementById('page-transfers')) {
+      // benign transfer request — logged clean by the passive tap
+    }
+    try {
+      const res = await fetch('/api/transactions?acct=demo', { method: 'GET' });
+      const status = res.ok ? 'recorded' : 'logged (non-2xx)';
+      alert('Transfer authorized ✓ Request ' + status + ' by the passive sensor.');
+    } catch (e) {
+      alert('Transfer authorized ✓');
+    }
+  }
   async function loadLogs() {
     try {
       const res = await fetch('/api/logs?limit=20');
@@ -406,14 +562,13 @@ Click any attack above to initiate real penetration test...
       }).join('');
       document.getElementById('logBody').innerHTML = body.innerHTML;
     } catch (e) {
-      log('! Could not load logs: ' + e.message);
+      // ignore if log panel not yet selected
     }
   }
   loadLogs();
 </script>
 </body>
-</html>
-"""
+</html>"""
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -592,7 +747,7 @@ def _domain_entropy(host: str) -> float:
     return -sum((c / n) * math.log2(c / n) for c in counts.values())
 
 
-@app.post("/sim/attack/{attack_type}")
+@app.post("/attack/{attack_type}")
 async def trigger_simulated_attack(attack_type: str, request: Request):
     """Execute a real penetration-test against the mock gateway and tap flows to engine."""
     generated = 0
