@@ -86,42 +86,136 @@ interface RawAlert {
   destination?: { ip: string; port: number };
   protocol?: string;
   flow_id?: string;
+  flowId?: string;
   detector?: string;
-  evidence?: { feature: string; value: number; reason: string }[];
+  evidence?: any;
+  evidence_json?: any;
+  summary?: string;
+  detection_method?: string;
+  detectionMethod?: string;
+  contributing_features?: any[];
+  contributingFeatures?: any[];
+  detector_outputs?: any[];
+  detectorOutputs?: any[];
+  analyst_interpretation?: string;
+  analystInterpretation?: string;
+  magnitude?: number;
+  detection_latency_ms?: number;
+  detectionLatencyMs?: number;
+  model_score?: number;
+  modelScore?: number;
 }
 
 /** Map a raw ZERO-DAY backend alert into the UI Alert shape. */
-export function mapAlert(raw: RawAlert): Alert {
-  const sihCategory = (raw.sih_category as ThreatCategory) ?? mapThreatClassToCategory(raw.threat_class ?? raw.threatClass ?? 'botnet_c2_beacon');
-  const evidence: string[] = (raw.evidence ?? []).map((e) => `${e.feature} = ${e.value} (${e.reason})`);
-  const contributingFeatures = (raw.evidence ?? []).map((e) => ({ name: e.feature, value: String(e.value) }));
-  const detectorOutputs = [{
-    detector: raw.detector ?? 'zero_day',
-    score: raw.confidence ?? 0,
-    triggered: true,
-  }];
-  const alertId = raw.alert_id ?? raw.id ?? `al-${Math.random().toString(36).slice(2, 10)}`;
+export function mapAlert(raw: RawAlert | any): Alert {
+  if (!raw) {
+    return {
+      id: `al-${Math.random().toString(36).slice(2, 10)}`,
+      sihCategory: 'Botnet C2 Beaconing',
+      threatClass: 'botnet_c2_beacon',
+      severity: 'HIGH',
+      confidence: 0.9,
+      timestamp: new Date().toISOString(),
+      source: { ip: '0.0.0.0', port: 443 },
+      destination: { ip: '0.0.0.0', port: 443 },
+      protocol: 'TCP',
+      status: 'New',
+      summary: 'Alert detected',
+      detectionMethod: 'Rules + ML hybrid',
+      evidence: [],
+      contributingFeatures: [],
+      detectorOutputs: [],
+      analystInterpretation: 'Alert detected by ZERO-DAY engine.',
+      magnitude: 0.9,
+      detectionLatencyMs: 0,
+      flowId: '',
+    };
+  }
+
+  const sihCategory =
+    (raw.sih_category as ThreatCategory) ??
+    mapThreatClassToCategory(raw.threat_class ?? raw.threatClass ?? 'botnet_c2_beacon');
+
+  let rawEvidence = raw.evidence ?? raw.evidence_json ?? [];
+  if (typeof rawEvidence === 'string') {
+    try {
+      rawEvidence = JSON.parse(rawEvidence);
+    } catch {
+      rawEvidence = [rawEvidence];
+    }
+  }
+  if (!Array.isArray(rawEvidence)) {
+    rawEvidence = [rawEvidence];
+  }
+
+  const evidence: string[] = rawEvidence
+    .map((e: any) => {
+      if (e === null || e === undefined) return '';
+      if (typeof e === 'string') return e;
+      if (typeof e === 'object') {
+        if (e.reason) return String(e.reason);
+        if (e.feature) return `${e.feature} = ${e.value ?? ''} ${e.reason ? `(${e.reason})` : ''}`.trim();
+        if (e.name) return `${e.name} = ${e.value ?? ''}`;
+        try { return JSON.stringify(e); } catch { return '[Forensic Record]'; }
+      }
+      return String(e);
+    })
+    .filter((s: string) => s.length > 0);
+
+  const contributingFeatures = Array.isArray(raw.contributingFeatures ?? raw.contributing_features)
+    ? (raw.contributingFeatures ?? raw.contributing_features)
+    : rawEvidence
+        .filter((e: any) => typeof e === 'object' && e !== null && (e.feature || e.name))
+        .map((e: any) => ({ name: String(e.feature || e.name), value: String(e.value ?? '') }));
+
+  const confidence = typeof raw.confidence === 'number' && !isNaN(raw.confidence) ? raw.confidence : 0.9;
+
+  const detectorOutputs = Array.isArray(raw.detectorOutputs ?? raw.detector_outputs)
+    ? (raw.detectorOutputs ?? raw.detector_outputs)
+    : [
+        {
+          detector: raw.detector ?? raw.detectionMethod ?? 'zero_day',
+          score: confidence,
+          triggered: true,
+        },
+      ];
+
+  const alertId = String(raw.alert_id ?? raw.id ?? `al-${Math.random().toString(36).slice(2, 10)}`);
+
   return {
     id: alertId,
     sihCategory,
     threatClass: raw.threat_class ?? raw.threatClass ?? sihCategory,
     severity: (raw.severity as Alert['severity']) ?? 'HIGH',
-    confidence: raw.confidence ?? 0.9,
+    confidence,
     timestamp: raw.timestamp ?? new Date().toISOString(),
     source: raw.source ?? { ip: raw.src_ip ?? '0.0.0.0', port: raw.src_port ?? 443 },
     destination: raw.destination ?? { ip: raw.dst_ip ?? '0.0.0.0', port: raw.dst_port ?? 443 },
     protocol: ((raw.protocol ?? '').toUpperCase() as Alert['protocol']) || 'TCP',
     status: (raw.status as Alert['status']) || 'New',
-    summary: `${sihCategory} — ${raw.threat_class ?? raw.threatClass ?? ''} detected by ${raw.detector ?? 'zero_day engine'}`,
-    detectionMethod: raw.detector === 'njode_unsupervised' ? 'NJ-ODE unsupervised' : 'Rules + ML hybrid',
-    modelScore: raw.confidence,
+    summary:
+      raw.summary ??
+      `${sihCategory} — ${raw.threat_class ?? raw.threatClass ?? ''} detected by ${raw.detector ?? 'zero_day engine'}`,
+    detectionMethod:
+      raw.detectionMethod ??
+      raw.detection_method ??
+      (raw.detector === 'njode_unsupervised' ? 'NJ-ODE unsupervised' : 'Rules + ML hybrid'),
+    modelScore: typeof raw.modelScore === 'number' ? raw.modelScore : (typeof raw.model_score === 'number' ? raw.model_score : confidence),
     evidence,
     contributingFeatures,
     detectorOutputs,
-    analystInterpretation: `Detected by ${raw.detector ?? 'zero_day engine'} with confidence ${((raw.confidence ?? 0.9) * 100).toFixed(1)}%. ${evidence[0] ?? ''}`,
-    magnitude: raw.confidence ?? 0.9,
-    detectionLatencyMs: 0,
-    flowId: raw.flow_id ?? '',
+    analystInterpretation:
+      raw.analystInterpretation ??
+      raw.analyst_interpretation ??
+      `Detected by ${raw.detector ?? 'zero_day engine'} with confidence ${(confidence * 100).toFixed(1)}%. ${evidence[0] ?? ''}`,
+    magnitude: typeof raw.magnitude === 'number' && !isNaN(raw.magnitude) ? raw.magnitude : confidence,
+    detectionLatencyMs:
+      typeof raw.detectionLatencyMs === 'number'
+        ? raw.detectionLatencyMs
+        : typeof raw.detection_latency_ms === 'number'
+        ? raw.detection_latency_ms
+        : 0,
+    flowId: String(raw.flow_id ?? raw.flowId ?? ''),
   };
 }
 

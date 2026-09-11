@@ -35,32 +35,108 @@ export const getSupabaseClient = (): SupabaseClient | null => {
 
 // Map Supabase DB row to React Alert Interface
 export function mapSupabaseRowToAlert(row: any): Alert {
+  if (!row) {
+    return {
+      id: `alt-${Math.random().toString(36).substring(2, 8)}`,
+      timestamp: new Date().toISOString(),
+      flowId: 'flow-000',
+      threatClass: 'botnet_c2_beacon',
+      sihCategory: 'Botnet C2 Beaconing',
+      severity: 'HIGH',
+      confidence: 0.90,
+      status: 'New',
+      source: { ip: '0.0.0.0', port: 443 },
+      destination: { ip: '0.0.0.0', port: 443 },
+      protocol: 'TCP',
+      evidence: [],
+      summary: 'Alert detected',
+      detectionMethod: 'Rules + ML hybrid',
+      contributingFeatures: [],
+      detectorOutputs: [],
+      analystInterpretation: 'Alert detected by ZERO-DAY engine.',
+      magnitude: 0.90,
+      detectionLatencyMs: 0,
+    };
+  }
+
+  let rawEvidence = row.evidence ?? row.evidence_json ?? [];
+  if (typeof rawEvidence === 'string') {
+    try {
+      rawEvidence = JSON.parse(rawEvidence);
+    } catch {
+      rawEvidence = [rawEvidence];
+    }
+  }
+  if (!Array.isArray(rawEvidence)) {
+    rawEvidence = [rawEvidence];
+  }
+
+  const evidence: string[] = rawEvidence
+    .map((e: any) => {
+      if (e === null || e === undefined) return '';
+      if (typeof e === 'string') return e;
+      if (typeof e === 'object') {
+        if (e.reason) return String(e.reason);
+        if (e.feature) return `${e.feature} = ${e.value ?? ''} ${e.reason ? `(${e.reason})` : ''}`.trim();
+        if (e.name) return `${e.name} = ${e.value ?? ''}`;
+        try { return JSON.stringify(e); } catch { return '[Forensic Record]'; }
+      }
+      return String(e);
+    })
+    .filter((s: string) => s.length > 0);
+
+  const contributingFeatures = Array.isArray(row.contributing_features ?? row.contributingFeatures)
+    ? (row.contributing_features ?? row.contributingFeatures)
+    : rawEvidence
+        .filter((e: any) => typeof e === 'object' && e !== null && (e.feature || e.name))
+        .map((e: any) => ({ name: String(e.feature || e.name), value: String(e.value ?? '') }));
+
+  const confidence = typeof row.confidence === 'number' && !isNaN(row.confidence) ? row.confidence : 0.90;
+
+  const detectorOutputs = Array.isArray(row.detector_outputs ?? row.detectorOutputs)
+    ? (row.detector_outputs ?? row.detectorOutputs)
+    : [
+        {
+          detector: row.detector ?? row.detection_method ?? 'zero_day',
+          score: confidence,
+          triggered: true,
+        },
+      ];
+
   return {
-    id: row.alert_id || `alt-${Math.random().toString(36).substring(2, 8)}`,
+    id: String(row.alert_id || row.id || `alt-${Math.random().toString(36).substring(2, 8)}`),
     timestamp: row.timestamp || new Date().toISOString(),
-    flowId: row.flow_id || 'flow-000',
-    threatClass: row.threat_class || 'botnet_c2_beacon',
-    sihCategory: row.sih_category || 'Botnet C2 Beaconing',
+    flowId: String(row.flow_id || row.flowId || 'flow-000'),
+    threatClass: row.threat_class || row.threatClass || 'botnet_c2_beacon',
+    sihCategory: row.sih_category || row.sihCategory || 'Botnet C2 Beaconing',
     severity: (row.severity as Alert['severity']) || 'HIGH',
-    confidence: typeof row.confidence === 'number' ? row.confidence : 0.90,
+    confidence,
     status: (row.status as Alert['status']) || 'New',
     source: {
-      ip: row.src_ip || '0.0.0.0',
-      port: row.src_port || 443,
+      ip: row.src_ip || row.source?.ip || '0.0.0.0',
+      port: row.src_port || row.source?.port || 443,
     },
     destination: {
-      ip: row.dst_ip || '0.0.0.0',
-      port: row.dst_port || 443,
+      ip: row.dst_ip || row.destination?.ip || '0.0.0.0',
+      port: row.dst_port || row.destination?.port || 443,
     },
     protocol: row.protocol || 'TCP',
-    evidence: Array.isArray(row.evidence) ? row.evidence : [],
-    summary: row.summary || 'Supabase event',
-    detectionMethod: row.detection_method || 'Unknown',
-    contributingFeatures: Array.isArray(row.contributing_features) ? row.contributing_features : [],
-    detectorOutputs: Array.isArray(row.detector_outputs) ? row.detector_outputs : [],
-    analystInterpretation: row.analyst_interpretation || '',
-    magnitude: row.magnitude || 0,
-    detectionLatencyMs: row.detection_latency_ms || 0,
+    evidence,
+    summary: row.summary || `${row.sih_category || 'Threat'} detected by ZERO-DAY engine`,
+    detectionMethod: row.detection_method || row.detectionMethod || 'Rules + ML hybrid',
+    contributingFeatures,
+    detectorOutputs,
+    analystInterpretation:
+      row.analyst_interpretation ||
+      row.analystInterpretation ||
+      `Observed ${row.sih_category || 'threat'} with confidence ${(confidence * 100).toFixed(1)}%.`,
+    magnitude: typeof row.magnitude === 'number' && !isNaN(row.magnitude) ? row.magnitude : confidence,
+    detectionLatencyMs:
+      typeof row.detection_latency_ms === 'number'
+        ? row.detection_latency_ms
+        : typeof row.detectionLatencyMs === 'number'
+        ? row.detectionLatencyMs
+        : 0,
   };
 }
 

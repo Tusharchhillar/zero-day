@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { DashboardPage } from './pages/DashboardPage';
 import { AlertsPage } from './pages/AlertsPage';
 import { TrafficPage } from './pages/TrafficPage';
@@ -15,7 +16,9 @@ function ShellLayout() {
   const [collapsed, setCollapsed] = useState(false);
   return (
     <AppShell collapsed={collapsed} setCollapsed={setCollapsed}>
-      <Outlet />
+      <ErrorBoundary fallbackTitle="Could not load page view">
+        <Outlet />
+      </ErrorBoundary>
     </AppShell>
   );
 }

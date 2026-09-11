@@ -30,7 +30,7 @@ export function LiveAlertList({ limit = 8, onSelect }: { limit?: number; onSelec
               <SeverityBadge severity={a.severity} />
             </div>
             <div className="a-meta" style={{ marginTop: 3 }}>
-              {a.source.ip}:{a.source.port} <span className="ip-arrow">→</span> {a.destination.ip}:{a.destination.port} · {a.protocol}
+              {a.source?.ip ?? '0.0.0.0'}:{a.source?.port ?? 443} <span className="ip-arrow">→</span> {a.destination?.ip ?? '0.0.0.0'}:{a.destination?.port ?? 443} · {a.protocol || 'TCP'}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
               <span style={{ fontSize: 12, color: 'var(--muted)' }}>{a.summary}</span>
