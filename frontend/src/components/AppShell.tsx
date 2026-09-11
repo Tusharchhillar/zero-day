@@ -42,14 +42,14 @@ function SidebarContent({
       <div className="sidebar-head">
         <div
           className="brand-mark"
-          style={{ width: 34, height: 34, fontSize: 14, borderRadius: 8, flexShrink: 0 }}
+          style={{ width: 36, height: 36, fontSize: 13, borderRadius: 10, flexShrink: 0 }}
         >
-          ZΔ
+          TW
         </div>
         {!collapsed && (
           <div className="brand-text">
-            <div className="b1">ZERO-DAY</div>
-            <div className="b2">SIH 26145 • SOC Engine</div>
+            <div className="b1">Threatwave</div>
+            <div className="b2">Cyber Threat Intel</div>
           </div>
         )}
       </div>
@@ -80,6 +80,7 @@ function SidebarContent({
                         height: 7,
                         borderRadius: '50%',
                         background: 'var(--sev-critical)',
+                        boxShadow: '0 0 6px rgba(244, 63, 94, 0.5)',
                       }}
                     />
                   )}
@@ -149,6 +150,7 @@ function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => vo
             background: 'var(--accent-dim)',
             color: 'var(--accent)',
             fontWeight: 600,
+            letterSpacing: '0.04em',
           }}
         >
           LIVE FEED
@@ -169,10 +171,17 @@ function NotificationPanel({ open, onClose }: { open: boolean; onClose: () => vo
               padding: '11px 16px',
               borderBottom: '1px solid var(--border-soft)',
               cursor: 'pointer',
-              background: n.read ? 'transparent' : 'rgba(34,211,238,0.03)',
+              background: n.read ? 'transparent' : 'rgba(0, 200, 255, 0.03)',
               alignItems: 'flex-start',
+              transition: 'background 180ms ease',
             }}
             onClick={onClose}
+            onMouseEnter={(e) => {
+              if (n.read) (e.currentTarget as HTMLElement).style.background = 'rgba(0, 200, 255, 0.04)';
+            }}
+            onMouseLeave={(e) => {
+              if (n.read) (e.currentTarget as HTMLElement).style.background = 'transparent';
+            }}
           >
             <SeverityBadge severity={n.severity} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -214,7 +223,7 @@ export function AppShell({
   };
 
   const currentRoute = titleMap[location.pathname] || {
-    title: 'ZERO-DAY SIH26145',
+    title: 'Threatwave',
     subtitle: 'Cyber Threat Intelligence Platform',
   };
 
@@ -262,9 +271,9 @@ export function AppShell({
             >
               {collapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
             </button>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <h1 className="page-title">{currentRoute.title}</h1>
-              <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.01em' }}>
+              <span style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.02em' }}>
                 {currentRoute.subtitle}
               </span>
             </div>
@@ -273,7 +282,7 @@ export function AppShell({
           <div className="topbar-right">
             <div
               className={`live-status-pill ${isLive === false ? 'offline' : ''}`}
-              title={isLive ? 'FastAPI :8000 & NJ-ODE Engine Active' : 'Connecting to ZERO-DAY Backend...'}
+              title={isLive ? 'Threatwave Engine Active' : 'Connecting to Threatwave Backend...'}
             >
               <span className="live-dot" />
               <span>{isLive ? 'ENGINE ACTIVE (8000)' : isLive === false ? 'ENGINE OFFLINE' : 'CHECKING...'}</span>
@@ -297,6 +306,7 @@ export function AppShell({
                       height: 6,
                       borderRadius: '50%',
                       background: 'var(--sev-critical)',
+                      boxShadow: '0 0 6px rgba(244, 63, 94, 0.5)',
                     }}
                   />
                 )}
@@ -309,13 +319,14 @@ export function AppShell({
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '4px 10px',
+                padding: '5px 12px',
                 borderRadius: 'var(--r-sm)',
                 background: 'var(--surface)',
                 border: '1px solid var(--border)',
                 fontSize: 12,
                 color: 'var(--ink-2)',
                 fontWeight: 500,
+                backdropFilter: 'blur(8px)',
               }}
             >
               <ShieldCheck size={14} color="var(--accent)" />

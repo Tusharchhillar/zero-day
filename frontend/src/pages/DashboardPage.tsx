@@ -65,7 +65,10 @@ export function DashboardPage() {
           <div className="sub">Real-time visibility into unidirectional network traffic and detected cyber threats.</div>
         </div>
         <div className="page-head-actions">
-          <div className="health-pill"><span className="pulse" />Monitoring active</div>
+          <div className="health-pill">
+            <span className="pulse" />
+            Monitoring active
+          </div>
           <div style={{ fontSize: 12, color: 'var(--muted)' }}>Last updated {lastUpdated.toLocaleTimeString()}</div>
           <button className="btn" onClick={refresh} disabled={refreshing}>
             {refreshing ? <span className="spinner" /> : <RefreshCw size={15} />} Refresh
