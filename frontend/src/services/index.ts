@@ -320,7 +320,7 @@ export const trafficService = {
     const m = await api<any>('/api/metrics');
     if (m) {
       return {
-        totalVolumeMbps: m.events_per_sec ? m.events_per_sec / 1000 : 0,
+        totalVolumeMbps: m.events_per_sec ? (m.events_per_sec * 500 * 8) / 1e6 : 0,
         flowCount: m.events_processed ?? 0,
         packetCount: (m.events_processed ?? 0),
         byteCount: (m.events_processed ?? 0) * 500 / 1e9,
