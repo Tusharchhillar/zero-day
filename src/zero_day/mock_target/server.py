@@ -336,7 +336,7 @@ PORTAL_HTML = """<!DOCTYPE html>
     <button class="nav-link active" data-page="dashboard" onclick="showPage('dashboard')">Dashboard</button>
     <button class="nav-link" data-page="accounts" onclick="showPage('accounts')">Accounts</button>
     <button class="nav-link" data-page="transfers" onclick="showPage('transfers')">Transfers</button>
-    <button class="nav-link" data-page="security" onclick="showPage('security')">Security Lab</button>
+    <button class="nav-link" data-page="logs" onclick="showPage('logs')">Logs</button>
   </nav>
   <div class="header-right">
     <div class="pill"><span class="pulse-dot"></span> Protected by ZERO-DAY Passive Sensor</div>
@@ -458,47 +458,24 @@ PORTAL_HTML = """<!DOCTYPE html>
     </div>
   </section>
 
-  <!-- SECURITY LAB -->
-  <section class="page" id="page-security">
+  <!-- LOGS -->
+  <section class="page" id="page-logs">
     <div class="hero">
       <div>
-        <h1>Security Lab · Red Team Console</h1>
-        <p>Fire real exploits against the gateway. Each request is tapped, logged to SQLite, and detected on the SOC dashboard in real time.</p>
+        <h1>Request Log</h1>
+        <p>All HTTP requests captured by the passive tap middleware — SQLi, XSS, traversal, brute-force, DGA, and clean entries.</p>
       </div>
       <div style="display:flex;gap:10px">
-        <span class="pill" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#f87171"><span class="pulse-dot" style="background:#ef4444"></span> LIVE SENSORS</span>
-        <a href="http://localhost:5173/#/alerts" target="_blank" class="btn btn-danger">View Alerts ↗</a>
+        <button onclick="loadLogs()" style="background:var(--surface-2);border:1px solid var(--border);color:var(--accent);font-size:12px;padding:6px 14px;border-radius:8px;cursor:pointer;font-family:var(--mono)">↻ Refresh</button>
+        <a href="http://localhost:5173/#/activity" target="_blank" class="btn">SOC Activity ↗</a>
       </div>
     </div>
-    <div class="lab-layout">
-      <div class="red-console card">
-        <div class="card-title" style="color:#fca5a5;"><span>🎯 Attack Vectors</span><span class="atk-badge">/attack</span></div>
-        <input type="text" id="payloadInput" class="exploit-input" placeholder="Custom payload (e.g. '; DROP TABLE users--)" value="' OR 1=1--">
-        <div class="atk-grid">
-          <button class="atk-btn" onclick="triggerTest('brute_force')"><span>🔑 Login Brute-Force (V1)</span><span class="atk-badge">DDoS</span></button>
-          <button class="atk-btn" onclick="triggerTest('sql_injection')"><span>💉 SQL Injection Transactions (V2)</span><span class="atk-badge">Exfil</span></button>
-          <button class="atk-btn" onclick="triggerTest('xss')"><span>🧩 Reflected XSS Search (V3)</span><span class="atk-badge">Log</span></button>
-          <button class="atk-btn" onclick="triggerTest('open_dns')"><span>🧵 Open DNS / DGA Probe (V4)</span><span class="atk-badge">DGA</span></button>
-          <button class="atk-btn" onclick="triggerTest('path_traversal')"><span>📂 Path Traversal Upload (V5)</span><span class="atk-badge">Exfil</span></button>
-          <button class="atk-btn" onclick="triggerTest('weak_tls')"><span>🔒 Weak TLS ClientHello (V6)</span><span class="atk-badge">TLS</span></button>
-          <button class="atk-btn" onclick="triggerTest('weak_auth')"><span>📡 Weak Admin Token Heartbeat (V7)</span><span class="atk-badge">Beacon</span></button>
-          <button class="atk-btn" onclick="triggerTest('port_probe')"><span>🔍 Multi-Port Recon Probe (V8)</span><span class="atk-badge">Scan</span></button>
-        </div>
-        <div class="terminal-output" id="termOutput">[SYSTEM READY] https://localhost:5000
-Passive Data Diode Sensor active -> Forwarding to ZERO-DAY at http://localhost:8000
-Click any attack above to initiate real penetration test...
-</div>
-      </div>
-      <div class="card">
-        <div class="card-title"><span>Live Request Log (SQLite)</span><button onclick="loadLogs()" style="background:var(--surface-2);border:1px solid var(--border);color:var(--accent);font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;font-family:var(--mono)">↻ Refresh</button></div>
-        <div id="logContainer" style="max-height:420px;overflow-y:auto;">
-          <table class="http-logs"><thead><tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Flag</th></tr></thead><tbody id="logBody"><tr><td colspan="6" style="color:var(--text-muted)">No requests yet — launch an attack.</td></tr></tbody></table>
-        </div>
-        <div class="vuln-note" style="margin-top:16px;padding:14px;border:1px dashed var(--border);border-radius:10px">
-          <div style="font-size:12px;color:var(--text-muted);line-height:1.7">
-            <b style="color:var(--warning)">Detection pipeline:</b> every request is classified (SQLi / XSS / traversal / brute-force / DGA) by the tap middleware, then the flow metadata is pushed to <span class="mono">/attack</span> handlers which forward to the ZERO-DAY engine and replay canonical patterns.
-          </div>
-        </div>
+    <div class="card">
+      <div style="max-height:65vh;overflow-y:auto;">
+        <table class="http-logs">
+          <thead><tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Flag</th></tr></thead>
+          <tbody id="logBody"><tr><td colspan="6" style="color:var(--text-muted)">Click Refresh to load logs.</td></tr></tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -511,7 +488,7 @@ Click any attack above to initiate real penetration test...
     document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     document.getElementById('page-' + id).classList.add('active');
     document.querySelector(`.nav-link[data-page="${id}"]`).classList.add('active');
-    if (id === 'security') loadLogs();
+    if (id === 'logs') loadLogs();
   }
   function log(msg) {
     const ts = new Date().toLocaleTimeString();
@@ -545,7 +522,7 @@ Click any attack above to initiate real penetration test...
   }
   async function loadLogs() {
     try {
-      const res = await fetch('/api/logs?limit=20');
+      const res = await fetch('/api/logs?limit=50');
       const logs = await res.json();
       const body = document.getElementById('logBody');
       if (!logs.length) { body.innerHTML = '<tr><td colspan="6" style="color:var(--text-muted)">No requests yet.</td></tr>'; return; }

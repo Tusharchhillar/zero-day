@@ -41,3 +41,6 @@ frontend/.vite/
 
 # Don't ignore fixtures (they're demo data)
 !data/fixtures/
+
+# Runtime data
+data/alerts.db

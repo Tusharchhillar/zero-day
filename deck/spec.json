@@ -1,0 +1,187 @@
+{
+  "slide_size": "16:9",
+  "slides": [
+    {
+      "layout": "title",
+      "background": "0B0F1A",
+      "shapes": [
+        {"type": "rectangle", "left": 0, "top": 0, "width": 0.55, "height": 7.5, "fill": "7C3AED"},
+        {"type": "rectangle", "left": 0.55, "top": 0, "width": 0.12, "height": 7.5, "fill": "22D3EE"}
+      ],
+      "title": "ZERO-DAY",
+      "subtitle": "AI-Based Detection of Cyber Threats in Unidirectional IP Traffic",
+      "bullets": [
+        {"text": "Smart India Hackathon 2026  •  Problem Statement 26145  •  NTRO", "size": 16, "color": "22D3EE"},
+        {"text": "Team ZERO-DAY  |  Dual-Layer Anomaly Detection  |  Read-Only Passive Defence", "size": 13, "color": "A7B4CC"}
+      ],
+      "notes": "Good morning faculty. I'm presenting ZERO-DAY, our solution to SIH 2026 problem statement 26145 from NTRO: AI-Based Detection of Cyber Threats in Unidirectional IP Traffic."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "The Problem in 30 Seconds",
+      "subtitle": "Critical infrastructure can only watch — never touch.",
+      "bullets": [
+        {"text": "Power grids, banks & nuclear plants use hardware DATA DIODES to copy traffic into a secured monitoring enclave.", "size": 15, "color": "E6EAF2"},
+        {"text": "Data flows ONE WAY only  →  the system can SEE everything, but can NEVER probe, re-contact, or block.", "size": 15, "color": "E6EAF2"},
+        {"text": "This unidirectional blind spot is exactly where attackers hide.", "size": 15, "bold": true, "color": "22D3EE"},
+        {"text": "The challenge: detect 6 classes of cyber threat using PURELY PASSIVE observation.", "size": 15, "bold": true, "color": "FFFFFF"}
+      ],
+      "notes": "The key insight: data diodes make monitoring highly secure, but the cost is no active interaction. That is the heart of the problem."
+    },
+    {
+      "layout": "title_only",
+      "background": "0B0F1A",
+      "title": "Why Unidirectional?",
+      "shapes": [
+        {"type": "rounded_rectangle", "left": 0.7, "top": 1.8, "width": 5.7, "height": 3.4, "fill": "141B2E", "text": "✓  Air-Gap Security\n\nNo return path = attackers on the internet can't reach the monitor.", "text_color": "E6EAF2"},
+        {"type": "rounded_rectangle", "left": 7.0, "top": 1.8, "width": 5.7, "height": 3.4, "fill": "141B2E", "text": "✗  The Trade-off\n\nWe lose the ability to respond, probe, or confirm — detection must be passive.", "text_color": "22D3EE"},
+        {"type": "rounded_rectangle", "left": 3.4, "top": 5.7, "width": 6.5, "height": 1.0, "fill": "7C3AED", "text": "The data diode is a one-way mirror: total visibility, zero accessibility.", "text_color": "FFFFFF"}
+      ],
+      "notes": "Why does the problem even exist? Because unidirectional monitoring is very secure against being attacked, but you pay for it by not being able to interact."
+    },
+    {
+      "layout": "title_only",
+      "background": "0B0F1A",
+      "title": "Our Solution: Dual-Layer Detection",
+      "shapes": [
+        {"type": "rounded_rectangle", "left": 4.9, "top": 1.55, "width": 3.5, "height": 0.85, "fill": "22D3EE", "text": "PASSIVE INGEST (read-only)", "text_color": "06202A"},
+        {"type": "right_arrow", "left": 5.9, "top": 2.6, "width": 1.5, "height": 0.5, "fill": "22D3EE"},
+        {"type": "rounded_rectangle", "left": 1.0, "top": 3.3, "width": 5.3, "height": 1.6, "fill": "7C3AED", "text": "LAYER 1  •  RULE-BASED\n6 detectors • 40K evt/s • explainable", "text_color": "FFFFFF"},
+        {"type": "rounded_rectangle", "left": 7.0, "top": 3.3, "width": 5.3, "height": 1.6, "fill": "0EA5E9", "text": "LAYER 2  •  NJ-ODE\nunsupervised • zero-day • channel attribution", "text_color": "FFFFFF"},
+        {"type": "right_arrow", "left": 5.9, "top": 5.15, "width": 1.5, "height": 0.5, "fill": "FFFFFF"},
+        {"type": "rounded_rectangle", "left": 3.7, "top": 5.9, "width": 6.0, "height": 0.9, "fill": "141B2E", "text": "ALERT ENGINE   →   SOC Dashboard (FastAPI + WebSocket)", "text_color": "FFFFFF"}
+      ],
+      "notes": "Two layers working together. Layer 1 knows what attacks look like. Layer 2 knows what normal looks like."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Layer 1 — Rule-Based Detectors",
+      "subtitle": "Known attack signatures, matched in milliseconds.",
+      "bullets": [
+        {"text": "Six detectors on a common interface — DDoS, C2 Beacon, DGA, DNS Tunnel, Port Scan, Exfiltration.", "size": 14, "color": "E6EAF2"},
+        {"text": "Streaming: each FlowEvent processed one-at-a-time with bounded rolling-window state.", "size": 14, "color": "E6EAF2"},
+        {"text": "Every alert carries evidence — WHAT (threat class), HOW confident, and WHY (feature + reason).", "size": 14, "color": "E6EAF2"},
+        {"text": "Fast & explainable: 40,202 events/sec, under 1 ms per event.", "size": 15, "bold": true, "color": "22D3EE"}
+      ],
+      "notes": "Layer 1 is the speed layer. Example: SYN flood detector flags 150 SYN-only packets when the threshold is 100, citing 25 unique source IPs as evidence."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Layer 2 — Neural Jump ODE",
+      "subtitle": "The AI that catches what rules can't.",
+      "bullets": [
+        {"text": "Unsupervised anomaly detection — trains on BENIGN traffic only, no labels needed.", "size": 14, "color": "E6EAF2"},
+        {"text": "Learns the continuous-time expectation of normal traffic (Herrera, Krach & Teichmann — ICLR 2021).", "size": 14, "color": "E6EAF2"},
+        {"text": "Anomaly score = prediction error between expected and observed behaviour.", "size": 14, "color": "E6EAF2"},
+        {"text": "CHANNEL ATTRIBUTION tells analysts which feature broke (IAT, bytes, entropy, burst, direction) → maps to a threat class.", "size": 14, "bold": true, "color": "22D3EE"}
+      ],
+      "notes": "Layer 2 is the intelligence layer. No attack labels, just a learned model of normal. Deviation = anomaly = possible zero-day."
+    },
+    {
+      "layout": "title_only",
+      "background": "0B0F1A",
+      "title": "The X-Factor: Zero-Day Detection",
+      "shapes": [
+        {"type": "rounded_rectangle", "left": 0.8, "top": 1.9, "width": 5.5, "height": 3.4, "fill": "141B2E", "text": "RULES know what ATTACKS look like.\n\nCatch what you've already seen.\nMiss everything you haven't.", "text_color": "7C3AED"},
+        {"type": "right_arrow", "left": 6.6, "top": 3.3, "width": 1.2, "height": 0.6, "fill": "22D3EE"},
+        {"type": "rounded_rectangle", "left": 8.1, "top": 1.9, "width": 4.9, "height": 3.4, "fill": "7C3AED", "text": "NJ-ODE knows what NORMAL looks like.\n\nAnything that isn't normal gets flagged — even attacks never seen before.", "text_color": "FFFFFF"},
+        {"type": "rounded_rectangle", "left": 3.4, "top": 5.8, "width": 6.5, "height": 1.0, "fill": "22D3EE", "text": "This is the whole point of AI-based detection: defence against the unknown.", "text_color": "06202A"}
+      ],
+      "notes": "The differentiator. A rule-based system stops at yesterday's attacks. Our second layer flags tomorrow's. That is why AI is justified, not just rules."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Threat Coverage — SIH 26145",
+      "subtitle": "Six classes, dual coverage.",
+      "bullets": [
+        {"text": "Volumetric / Protocol DDoS — SYN flood + UDP amplification.", "size": 14, "color": "E6EAF2"},
+        {"text": "Botnet C2 Beaconing — periodic callbacks, detected by IAT periodicity.", "size": 14, "color": "E6EAF2"},
+        {"text": "DGA Domains — malware generating random domain names via entropy scoring.", "size": 14, "color": "E6EAF2"},
+        {"text": "DNS Tunnelling — data hidden inside DNS queries (length + record-type anomalies).", "size": 14, "color": "E6EAF2"},
+        {"text": "Encrypted-Session Malware — TLS metadata behavior, NO decryption.", "size": 14, "color": "E6EAF2"},
+        {"text": "Reconnaissance / Port Scan & Data Exfiltration — fan-out + volumetric asymmetry.", "size": 14, "bold": true, "color": "FFFFFF"}
+      ],
+      "notes": "Cover all six classes with both layers. Rules catch known variants; the model catches deviations on matching feature channels."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "The Encrypted-Traffic Question",
+      "subtitle": "We can't see inside — and we never need to.",
+      "bullets": [
+        {"text": "Hard constraint: TLS/QUIC payloads are never decrypted.", "size": 14, "bold": true, "color": "E6EAF2"},
+        {"text": "Instead, we analyze TLS METADATA: packet-size coefficient of variation, timing variation, JA3/JA4 fingerprints.", "size": 14, "color": "E6EAF2"},
+        {"text": "Malicious sessions have a different statistical rhythm than benign ones — even when encrypted.", "size": 15, "bold": true, "color": "22D3EE"}
+      ],
+      "notes": "This is the trap question. We stay on the right side of the constraint by reading metadata, not content. Encryption can't hide statistical behaviour."
+    },
+    {
+      "layout": "title_only",
+      "background": "0B0F1A",
+      "title": "Measured Performance",
+      "shapes": [
+        {"type": "rounded_rectangle", "left": 0.8, "top": 1.9, "width": 5.6, "height": 2.2, "fill": "141B2E", "text": "40,202  evt/s\nRULES-ONLY • < 1 ms per event", "text_color": "22D3EE"},
+        {"type": "rounded_rectangle", "left": 7.0, "top": 1.9, "width": 5.6, "height": 2.2, "fill": "141B2E", "text": "70  evt/s\nRULES + NJ-ODE • ~14 ms per event", "text_color": "7C3AED"},
+        {"type": "rounded_rectangle", "left": 0.8, "top": 4.5, "width": 5.6, "height": 2.0, "fill": "141B2E", "text": "26 / 26  TESTS PASSING\nStreaming, not batch — bounded latency", "text_color": "E6EAF2"},
+        {"type": "rounded_rectangle", "left": 7.0, "top": 4.5, "width": 5.6, "height": 2.0, "fill": "141B2E", "text": "96 WINDOWS • ~5s TRAIN\nNJ-ODE training in 60 epochs", "text_color": "E6EAF2"}
+      ],
+      "notes": "Real measured numbers from our benchmark harness — not estimates. Rules are the speed layer, NJ-ODE the depth layer."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Security Properties & PS Compliance",
+      "bullets": [
+        {"text": "Read-only ingest — no probes, no return path, no inline blocking.", "size": 14, "color": "E6EAF2"},
+        {"text": "No payload decryption — TLS/QUIC metadata only.", "size": 14, "color": "E6EAF2"},
+        {"text": "Air-gap compatible — requires no return path.", "size": 14, "color": "E6EAF2"},
+        {"text": "Evidence chain — every alert carries cited feature values.", "size": 14, "color": "E6EAF2"},
+        {"text": "Bounded state & thread-safe engine — deque pruning + cooldowns + N-of-M hysteresis → no alert storms.", "size": 14, "color": "22D3EE"}
+      ],
+      "notes": "Every constraint in the problem statement is satisfied by design, and we have the mechanisms to prove it."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Validation & Honest Next Steps",
+      "bullets": [
+        {"text": "Current: synthetic-vs-synthetic evaluation — 100% detection rate across all 6 attack scenarios.", "size": 14, "color": "E6EAF2"},
+        {"text": "On real data, we're clear: production validation needs CIC-IDS2017 / CSE-CIC-IDS2018.", "size": 15, "bold": true, "color": "22D3EE"},
+        {"text": "That real-dataset validation is our clearly-scoped next step.", "size": 14, "color": "E6EAF2"}
+      ],
+      "notes": "The honest answer on data. Owning the limitation builds trust — and frames the forward work. Never overclaim evaluation."
+    },
+    {
+      "layout": "title_content",
+      "background": "0B0F1A",
+      "title": "Tech Stack",
+      "subtitle": "Built to be fast, correct, and visual.",
+      "bullets": [
+        {"text": "Python 3.11+  •  PyTorch 2.0+  •  NJ-ODE (continuous-time anomaly model)", "size": 14, "color": "E6EAF2"},
+        {"text": "Pydantic v2 — strict alert schema with evidence chain", "size": 14, "color": "E6EAF2"},
+        {"text": "FastAPI + WebSocket — real-time API and alert streaming", "size": 14, "color": "E6EAF2"},
+        {"text": "React + TypeScript — SOC-style operations dashboard", "size": 14, "color": "E6EAF2"},
+        {"text": "pytest — 26 passing tests guarding the detection engine", "size": 14, "color": "22D3EE"}
+      ],
+      "notes": "A modern, defensible stack: streaming backend, strict contracts, and a real dashboard a security analyst would use."
+    },
+    {
+      "layout": "title",
+      "background": "0B0F1A",
+      "title": "ZERO-DAY — Questions?",
+      "subtitle": "AI-Based Detection of Cyber Threats in Unidirectional IP Traffic",
+      "shapes": [
+        {"type": "rectangle", "left": 0, "top": 6.5, "width": 13.333, "height": 1.0, "fill": "141B2E"},
+        {"type": "rounded_rectangle", "left": 5.0, "top": 4.6, "width": 3.3, "height": 1.2, "fill": "7C3AED", "text": "THANK YOU", "text_color": "FFFFFF"}
+      ],
+      "bullets": [
+        {"text": "Team ZERO-DAY  •  SIH 2026  •  PS 26145 (NTRO)", "size": 14, "color": "A7B4CC"}
+      ],
+      "notes": "Close with confidence. Expect questions on unidirectional reasoning, why AI over rules, encrypted traffic, and data validation."
+    }
+  ]
+}

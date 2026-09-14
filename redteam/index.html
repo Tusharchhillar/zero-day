@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RED TEAM OPS // ZERO-DAY Lab</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Oxanium:wght@400;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0f;
+      --surface:  #111118;
+      --surface2: #16161f;
+      --border:   #1e1e2e;
+      --red:      #ef4444;
+      --red-dim:  #7f1d1d;
+      --red-glow: rgba(239,68,68,.15);
+      --amber:    #f59e0b;
+      --amber-dim: #78350f;
+      --green:    #22c55e;
+      --green-dim: #14532d;
+      --cyan:     #06b6d4;
+      --text:     #e2e8f0;
+      --text-dim: #64748b;
+      --mono:     'JetBrains Mono', 'Fira Code', monospace;
+      --display:  'Oxanium', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scanline overlay ─────────────────────────────────── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9999;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,.03) 2px,
+        rgba(0,0,0,.03) 4px
+      );
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10,10,15,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--red), var(--amber));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: 16px;
+      color: #000;
+      letter-spacing: -1px;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(239,68,68,.3); }
+      50%      { box-shadow: 0 0 20px rgba(239,68,68,.5), 0 0 40px rgba(239,68,68,.15); }
+    }
+
+    .brand-text {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: .5px;
+    }
+
+    header nav {
+      display: flex;
+      gap: 6px;
+    }
+
+    header nav a {
+      color: var(--text-dim);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .5px;
+      transition: all .2s;
+    }
+
+    header nav a:hover { color: var(--text); background: var(--surface2); }
+    header nav a.active { color: var(--red); background: var(--red-glow); }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--green);
+      padding: 5px 12px;
+      border: 1px solid var(--green-dim);
+      border-radius: 20px;
+      background: rgba(34,197,94,.06);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Main layout ──────────────────────────────────────── */
+    .page { display: none; padding: 32px; max-width: 1400px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 28px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .hero h1 {
+      font-family: var(--display);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: #fff;
+    }
+
+    .hero p {
+      color: var(--text-dim);
+      font-size: 13px;
+      margin-top: 6px;
+      max-width: 600px;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    /* ── Buttons ──────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      text-decoration: none;
+    }
+
+    .btn:hover { border-color: var(--text-dim); background: #1e1e2e; }
+
+    .btn-red {
+      border-color: var(--red-dim);
+      color: var(--red);
+      background: rgba(239,68,68,.08);
+    }
+
+    .btn-red:hover {
+      background: rgba(239,68,68,.18);
+      border-color: rgba(239,68,68,.5);
+      color: #fca5a5;
+      box-shadow: 0 0 16px rgba(239,68,68,.15);
+    }
+
+    .btn-amber {
+      border-color: var(--amber-dim);
+      color: var(--amber);
+      background: rgba(245,158,11,.08);
+    }
+
+    .btn-amber:hover {
+      background: rgba(245,158,11,.18);
+      border-color: rgba(245,158,11,.5);
+    }
+
+    /* ── Cards ────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-title .badge {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--red-glow);
+      color: var(--red);
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    /* ── Stats row ────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+
+    .stat-label { font-size: 11px; color: var(--text-dim); letter-spacing: .5px; text-transform: uppercase; }
+    .stat-value { font-family: var(--display); font-size: 28px; font-weight: 700; margin-top: 4px; }
+    .stat-value.red { color: var(--red); }
+    .stat-value.amber { color: var(--amber); }
+    .stat-value.green { color: var(--green); }
+    .stat-value.cyan { color: var(--cyan); }
+    .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* ── Lab layout ───────────────────────────────────────── */
+    .lab-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 1000px) {
+      .lab-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Attack console (left) ────────────────────────────── */
+    .attack-console {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .attack-console::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red), var(--amber), var(--red));
+      animation: scan-line 3s linear infinite;
+    }
+
+    @keyframes scan-line {
+      0%   { background-position: -200px 0; }
+      100% { background-position: 200px 0; }
+    }
+
+    .payload-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+    }
+
+    .payload-input:focus {
+      outline: none;
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(239,68,68,.15);
+    }
+
+    .attack-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .atk-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .25s;
+    }
+
+    .atk-btn:hover:not(:disabled) {
+      background: var(--red-glow);
+      border-color: rgba(239,68,68,.4);
+      color: #fca5a5;
+      transform: translateX(3px);
+    }
+
+    .atk-btn:active:not(:disabled) { transform: translateX(1px); }
+
+    .atk-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    .atk-btn .tag {
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .tag-ddos   { background: rgba(239,68,68,.15); color: #f87171; }
+    .tag-exfil  { background: rgba(168,85,247,.15); color: #c084fc; }
+    .tag-dga    { background: rgba(6,182,212,.15);  color: #22d3ee; }
+    .tag-tls    { background: rgba(245,158,11,.15); color: #fbbf24; }
+    .tag-beacon { background: rgba(34,197,94,.15);  color: #4ade80; }
+    .tag-scan   { background: rgba(239,68,68,.15);  color: #f87171; }
+    .tag-log    { background: rgba(100,116,139,.15); color: #94a3b8; }
+
+    /* ── Terminal ─────────────────────────────────────────── */
+    .terminal {
+      background: #030712;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 11.5px;
+      color: var(--green);
+      height: 340px;
+      overflow-y: auto;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .terminal::-webkit-scrollbar { width: 6px; }
+    .terminal::-webkit-scrollbar-track { background: transparent; }
+    .terminal::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .term-dim  { color: var(--text-dim); }
+    .term-red  { color: var(--red); }
+    .term-amber { color: var(--amber); }
+    .term-cyan { color: var(--cyan); }
+    .term-white { color: #fff; font-weight: 600; }
+
+    /* ── Log table ────────────────────────────────────────── */
+    .log-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .log-table th {
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 500;
+    }
+
+    .log-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.03);
+    }
+
+    .log-table tr:hover { background: rgba(255,255,255,.02); }
+
+    .flag-sqli     { color: var(--red); font-weight: 600; }
+    .flag-xss      { color: var(--amber); font-weight: 600; }
+    .flag-traversal { color: var(--cyan); font-weight: 600; }
+    .flag-clean    { color: var(--text-dim); }
+    .flag-other    { color: #c084fc; font-weight: 600; }
+
+    .log-container {
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .log-container::-webkit-scrollbar { width: 6px; }
+    .log-container::-webkit-scrollbar-track { background: transparent; }
+    .log-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Vuln cards ───────────────────────────────────────── */
+    .vuln-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+
+    .vuln-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all .2s;
+    }
+
+    .vuln-card:hover {
+      border-color: rgba(239,68,68,.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,.3);
+    }
+
+    .vuln-card .vuln-id {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .vuln-card h3 {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .vuln-card p {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .vuln-card .vuln-endpoint {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--cyan);
+      font-family: var(--mono);
+    }
+
+    /* ── About page ───────────────────────────────────────── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; } }
+
+    .about-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .about-card h3 {
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+
+    .about-card p, .about-card li {
+      font-size: 12.5px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    .about-card ul { padding-left: 18px; }
+    .about-card li { margin-bottom: 6px; }
+    .about-card code {
+      background: var(--bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      color: var(--cyan);
+    }
+
+    /* ── Glitch title ─────────────────────────────────────── */
+    .glitch {
+      position: relative;
+      display: inline-block;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .glitch::before {
+      animation: glitch-1 2.5s infinite linear alternate-reverse;
+      clip-path: inset(0 0 65% 0);
+      color: var(--cyan);
+    }
+
+    .glitch::after {
+      animation: glitch-2 2.5s infinite linear alternate-reverse;
+      clip-path: inset(60% 0 0 0);
+      color: var(--red);
+    }
+
+    @keyframes glitch-1 {
+      0%   { transform: translate(0); }
+      20%  { transform: translate(-2px, 2px); }
+      40%  { transform: translate(-2px, -2px); }
+      60%  { transform: translate(2px, 2px); }
+      80%  { transform: translate(2px, -2px); }
+      100% { transform: translate(0); }
+    }
+
+    @keyframes glitch-2 {
+      0%   { transform: translate(0); }
+      20%  { transform: translate(2px, -1px); }
+      40%  { transform: translate(-2px, 1px); }
+      60%  { transform: translate(1px, -2px); }
+      80%  { transform: translate(-1px, 2px); }
+      100% { transform: translate(0); }
+    }
+
+    /* ── Misc ─────────────────────────────────────────────── */
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 24px 0;
+    }
+
+    .mono { font-family: var(--mono); }
+
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .flex-center { display: flex; align-items: center; gap: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-16 { margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ──────────────────────────────────────────── -->
+<header>
+  <div class="brand">
+    <div class="brand-logo">RT</div>
+    <div>
+      <div class="brand-text">Red Team Ops</div>
+      <div class="brand-sub">ZERO-DAY Security Lab // PS 26145</div>
+    </div>
+  </div>
+  <nav>
+    <a href="#" class="active" onclick="showPage('lab',this);return false">Lab</a>
+    <a href="#" onclick="showPage('vulns',this);return false">Vulnerabilities</a>
+    <a href="#" onclick="showPage('logs',this);return false">Logs</a>
+    <a href="#" onclick="showPage('about',this);return false">About</a>
+  </nav>
+  <div class="status-pill">
+    <div class="status-dot"></div>
+    Sensors Active
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: LAB                                              -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="page active" id="page-lab">
+  <div class="hero">
+    <div>
+      <h1><span class="glitch" data-text="Security Lab">Security Lab</span></h1>
+      <p>Launch real exploits against the ApexGov gateway. Every request is tapped, logged to SQLite, and detected on the SOC dashboard in real time via the ZERO-DAY passive sensor.</p>
+    </div>
+    <div class="hero-actions">
+      <span class="status-pill" style="border-color:var(--red-dim);color:var(--red);background:rgba(239,68,68,.06)">
+        <div class="status-dot" style="background:var(--red)"></div>
+        LIVE SENSORS
+      </span>
+      <a href="http://localhost:5173/#/alerts" target="_blank" class="btn btn-red">SOC Alerts ↗</a>
+    </div>
+  </div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-label">Attacks Fired</div>
+      <div class="stat-value red" id="statAttacks">0</div>
+      <div class="stat-sub">Total exploit requests</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Events Generated</div>
+      <div class="stat-value amber" id="statEvents">0</div>
+      <div class="stat-sub">Flow events to engine</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Flagged Requests</div>
+      <div class="stat-value cyan" id="statFlagged">0</div>
+      <div class="stat-sub">Classified by tap middleware</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Log Entries</div>
+      <div class="stat-value green" id="statLogs">0</div>
+      <div class="stat-sub">SQLite cold store rows</div>
+    </div>
+  </div>
+
+  <div class="lab-grid">
+    <!-- LEFT: Attack console -->
+    <div class="card attack-console">
+      <div class="card-title">
+        <span>🎯 Attack Vectors</span>
+        <span class="badge">/attack</span>
+      </div>
+      <input type="text" id="payloadInput" class="payload-input" placeholder="Custom payload (e.g. '; DROP TABLE users--)" value="' OR 1=1--">
+      <div class="attack-grid">
+        <button class="atk-btn" onclick="launchAttack('brute_force')">
+          <span>🔑 Login Brute-Force</span>
+          <span class="tag tag-ddos">DDoS · V1</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('sql_injection')">
+          <span>💉 SQL Injection Transactions</span>
+          <span class="tag tag-exfil">Exfil · V2</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('xss')">
+          <span>🧩 Reflected XSS Search</span>
+          <span class="tag tag-log">XSS · V3</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('open_dns')">
+          <span>🧵 Open DNS / DGA Probe</span>
+          <span class="tag tag-dga">DGA · V4</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('path_traversal')">
+          <span>📂 Path Traversal Upload</span>
+          <span class="tag tag-exfil">Exfil · V5</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('weak_tls')">
+          <span>🔒 Weak TLS ClientHello</span>
+          <span class="tag tag-tls">TLS · V6</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('weak_auth')">
+          <span>📡 Weak Admin Token Heartbeat</span>
+          <span class="tag tag-beacon">Beacon · V7</span>
+        </button>
+        <button class="atk-btn" onclick="launchAttack('port_probe')">
+          <span>🔍 Multi-Port Recon Probe</span>
+          <span class="tag tag-scan">Scan · V8</span>
+        </button>
+      </div>
+      <div class="terminal" id="termOutput">
+<span class="term-dim">[SYSTEM]</span> <span class="term-white">RED TEAM OPS</span> initialized
+<span class="term-dim">[TARGET]</span> <span id="targetUrl"></span> — ApexGov Treasury Gateway
+<span class="term-dim">[SENSOR]</span> Passive Data Diode → ZERO-DAY engine at <span class="term-cyan">http://localhost:9000</span>
+<span class="term-dim">[STATUS]</span> Ready. Select an attack vector to begin.</div>
+    </div>
+
+    <!-- RIGHT: Request log -->
+    <div class="card">
+      <div class="card-title">
+        <span>📋 Live Request Log</span>
+        <button onclick="loadLogs()" class="btn" style="padding:4px 12px;font-size:11px">↻ Refresh</button>
+      </div>
+      <div class="log-container">
+        <table class="log-table">
+          <thead>
+            <tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Flag</th></tr>
+          </thead>
+          <tbody id="logBody">
+            <tr><td colspan="6" style="color:var(--text-dim);padding:20px;text-align:center">No requests yet — launch an attack.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px;padding:14px;border:1px dashed var(--border);border-radius:10px;font-size:12px;color:var(--text-dim);line-height:1.7">
+        <b style="color:var(--amber)">Detection pipeline:</b> every request is classified (SQLi / XSS / traversal / brute-force / DGA) by the tap middleware, then flow metadata is pushed to the <span class="mono" style="color:var(--cyan)">/attack</span> handlers which forward to the ZERO-DAY engine.
+        Open the <a href="http://localhost:5173/#/alerts" target="_blank">SOC Dashboard</a> to see alerts appear in real time.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: VULNERABILITIES                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="page" id="page-vulns">
+  <div class="hero">
+    <div>
+      <h1>Vulnerability Catalog</h1>
+      <p>Eight intentional vulnerabilities in the ApexGov gateway, each mapped to a ZERO-DAY detection class.</p>
+    </div>
+  </div>
+  <div class="vuln-grid">
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--red)">V1 · DDoS</div>
+      <h3>Login Brute-Force</h3>
+      <p>Unthrottled POST /api/login — never locks out. 40 concurrent attempts per trigger. Generates massive inbound SYN-like flow density.</p>
+      <span class="vuln-endpoint">POST /api/login</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:#c084fc">V2 · Data Exfiltration</div>
+      <h3>SQL Injection in Transactions</h3>
+      <p>' OR 1=1-- dumps the entire transaction table (₹ 45L–₹ 99Cr). Response body 42KB vs 120 bytes for clean queries.</p>
+      <span class="vuln-endpoint">GET /api/transactions?acct=…</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--amber)">V3 · Log Poisoning</div>
+      <h3>Reflected XSS in Search</h3>
+      <p>Unescaped query echo — injects &lt;script&gt; tags. Exploits browser sessions and poisons server-side logs.</p>
+      <span class="vuln-endpoint">GET /search?q=…</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--cyan)">V4 · DGA Domains</div>
+      <h3>Open DNS Resolver</h3>
+      <p>Resolves arbitrary subdomains with no rate limit. 25 high-entropy random subdomains per trigger → DGA detection.</p>
+      <span class="vuln-endpoint">GET /api/dns-lookup?host=…</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:#c084fc">V5 · Data Exfiltration</div>
+      <h3>Path Traversal Upload</h3>
+      <p>filename=../../etc/exfil.db writes outside upload dir. Detects exfil path via entropy scoring.</p>
+      <span class="vuln-endpoint">POST /api/upload</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--amber)">V6 · TLS Anomaly</div>
+      <h3>Weak TLS ClientHello</h3>
+      <p>Accepts legacy RC4/SSLv3 ciphers. 8 simulated TLS sessions → JA3 fingerprint anomaly + entropy channel spike.</p>
+      <span class="vuln-endpoint">GET /api/vault</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--green)">V7 · C2 Beacon</div>
+      <h3>Static Admin Token Heartbeat</h3>
+      <p>Predictable token (admin_2024_secret) with 12 periodic pings → C2 beacon IAT detection.</p>
+      <span class="vuln-endpoint">GET /api/admin/status?token=…</span>
+    </div>
+    <div class="vuln-card">
+      <div class="vuln-id" style="color:var(--red)">V8 · Recon Scan</div>
+      <h3>Multi-Port Recon Probe</h3>
+      <p>16 ports scanned (21–8080) → fan-out pattern triggers port scan detection across hosts.</p>
+      <span class="vuln-endpoint">GET /api/probe/{port}</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: FULL LOGS                                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="page" id="page-logs">
+  <div class="hero">
+    <div>
+      <h1>Full Request Log</h1>
+      <p>All HTTP requests captured by the passive tap middleware — SQLi, XSS, traversal, brute-force, DGA, and clean entries.</p>
+    </div>
+    <div class="hero-actions">
+      <button onclick="loadLogs(100)" class="btn">↻ Refresh (100)</button>
+      <a href="http://localhost:5173/#/activity" target="_blank" class="btn">SOC Activity Log ↗</a>
+    </div>
+  </div>
+  <div class="card">
+    <div class="log-container" style="max-height:70vh">
+      <table class="log-table">
+        <thead>
+          <tr><th>Time</th><th>Method</th><th>Path</th><th>From</th><th>Status</th><th>Bytes</th><th>Flag</th></tr>
+        </thead>
+        <tbody id="fullLogBody">
+          <tr><td colspan="7" style="color:var(--text-dim);padding:40px;text-align:center">Click Refresh to load logs.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- PAGE: ABOUT                                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<section class="page" id="page-about">
+  <div class="hero">
+    <div>
+      <h1>About RED TEAM OPS</h1>
+      <p>Part of the ZERO-DAY SIH2026 project — AI-Based Detection of Cyber Threats in Unidirectional IP Traffic.</p>
+    </div>
+  </div>
+  <div class="about-grid">
+    <div class="about-card">
+      <h3>🎯 What This Lab Does</h3>
+      <p>The Security Lab simulates real-world attack traffic against a mock government gateway (ApexGov Treasury). Every exploit request is:</p>
+      <ul>
+        <li>Processed by the mock gateway's vulnerable endpoints</li>
+        <li>Logged to a SQLite cold-store via a passive tap middleware</li>
+        <li>Pushed as flow metadata to the ZERO-DAY detection engine</li>
+        <li>Detected and classified by both rule-based and NJ-ODE AI layers</li>
+        <li>Displayed as alerts on the SOC Dashboard in real time</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>🏗️ Architecture</h3>
+      <p>This lab is part of a 3-service stack:</p>
+      <ul>
+        <li><code>mock-target :5000</code> — ApexGov gateway + Security Lab + exploit endpoints</li>
+        <li><code>zero-day API :9000</code> — FastAPI detection engine (rules + NJ-ODE)</li>
+        <li><code>SOC Dashboard :5173</code> — React/TypeScript real-time alert viewer</li>
+      </ul>
+      <p style="margin-top:12px">All services bind <code>0.0.0.0</code> for LAN access.</p>
+    </div>
+    <div class="about-card">
+      <h3>🔬 Detection Pipeline</h3>
+      <p>Attack requests flow through the detection engine via two layers:</p>
+      <ul>
+        <li><b>Layer 1 (Rules):</b> 6 rule-based detectors at 40K evt/s — catches known patterns</li>
+        <li><b>Layer 2 (NJ-ODE):</b> Neural Jump ODE unsupervised anomaly model — catches zero-day attacks</li>
+      </ul>
+      <p style="margin-top:12px">Channel attribution identifies which feature (IAT, bytes, entropy, burst, direction) caused the anomaly.</p>
+    </div>
+    <div class="about-card">
+      <h3>🛡️ Problem Statement</h3>
+      <p><b>SIH 2026 — PS 26145 (NTRO)</b></p>
+      <p style="margin-top:8px">AI-Based Detection of Cyber Threats in Unidirectional IP Traffic. The system operates within a passive monitoring enclave behind a hardware data diode — it can see everything but never respond, probe, or block.</p>
+      <p style="margin-top:8px"><b>Tech:</b> Python 3.11, PyTorch, FastAPI, React/TypeScript, SQLite WAL.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── JavaScript ──────────────────────────────────────── -->
+<script>
+  const HOST   = window.location.hostname || 'localhost';
+  const TARGET = `http://${HOST}:5000`;
+  const API    = `http://${HOST}:9000`;
+  const term   = document.getElementById('termOutput');
+  let stats    = { attacks: 0, events: 0, flagged: 0 };
+
+  /* ── Page navigation ─────────────────────────────────── */
+  function showPage(id, link) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('header nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (link) link.classList.add('active');
+    if (id === 'logs') loadLogs(100);
+    if (id === 'lab')  loadLogs();
+  }
+
+  /* ── Terminal log ─────────────────────────────────────── */
+  function termLog(msg, cls = '') {
+    const ts = new Date().toLocaleTimeString('en-GB', {hour12:false});
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="term-dim">[${ts}]</span> ${cls ? `<span class="${cls}">` : ''}${msg}${cls ? '</span>' : ''}`;
+    term.appendChild(line);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  /* ── Stats update ─────────────────────────────────────── */
+  function updateStats() {
+    document.getElementById('statAttacks').textContent  = stats.attacks;
+    document.getElementById('statEvents').textContent   = stats.events;
+    document.getElementById('statFlagged').textContent  = stats.flagged;
+  }
+
+  /* ── Launch attack ────────────────────────────────────── */
+  async function launchAttack(type) {
+    const btns = document.querySelectorAll('.atk-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const labels = {
+      brute_force:    'Login Brute-Force',
+      sql_injection:  'SQL Injection',
+      xss:            'Reflected XSS',
+      open_dns:       'DGA / DNS Probe',
+      path_traversal: 'Path Traversal',
+      weak_tls:       'Weak TLS',
+      weak_auth:      'Admin Token Beacon',
+      port_probe:     'Multi-Port Recon',
+    };
+
+    termLog(`Launching <b>${labels[type]}</b>...`, 'term-amber');
+    stats.attacks++;
+    updateStats();
+
+    try {
+      const res  = await fetch(`${TARGET}/attack/${type}`, { method: 'POST' });
+      const data = await res.json();
+
+      stats.events  += data.events  || 0;
+      stats.flagged += data.flagged || 0;
+      updateStats();
+
+      termLog(`✓ ${data.vulnerability || type}: <b>${data.events}</b> requests → logged to SQLite`, 'term-white');
+      termLog(`→ ZERO-DAY Engine: <span style="color:var(--red);font-weight:700">${data.status.toUpperCase()}</span> · flagged <b>${data.flagged || 0}</b>`, 'term-cyan');
+
+      // auto-load logs after a beat
+      setTimeout(loadLogs, 500);
+    } catch (err) {
+      termLog(`! Attack failed: ${err.message}`, 'term-red');
+    }
+
+    btns.forEach(b => b.disabled = false);
+  }
+
+  /* ── Load request logs ────────────────────────────────── */
+  async function loadLogs(limit = 25) {
+    try {
+      const res  = await fetch(`${TARGET}/api/logs?limit=${limit}`);
+      const logs = await res.json();
+
+      document.getElementById('statLogs').textContent = logs.length;
+
+      const rowHtml = logs.map(l => {
+        let flagCls = 'flag-clean';
+        if (l.flagged === 'SQL_INJECTION')    flagCls = 'flag-sqli';
+        else if (l.flagged === 'XSS')         flagCls = 'flag-xss';
+        else if (l.flagged === 'PATH_TRAVERSAL') flagCls = 'flag-traversal';
+        else if (l.flagged)                   flagCls = 'flag-other';
+
+        return `<tr>
+          <td class="mono" style="color:var(--text-dim)">${new Date(l.timestamp).toLocaleTimeString('en-GB',{hour12:false})}</td>
+          <td class="mono">${l.method}</td>
+          <td class="mono">${l.path}</td>
+          <td class="mono" style="color:var(--text-dim)">${l.client_ip}:${l.src_port||''}</td>
+          <td style="color:${l.status_code>=400?'var(--red)':'var(--green)'}">${l.status_code}</td>
+          <td class="mono" style="color:var(--text-dim)">${l.response_bytes||'-'}</td>
+          <td class="${flagCls}">${l.flagged || 'clean'}</td>
+        </tr>`;
+      }).join('');
+
+      const tbody = limit > 50 ? document.getElementById('fullLogBody') : document.getElementById('logBody');
+      tbody.innerHTML = rowHtml || '<tr><td colspan="7" style="color:var(--text-dim);padding:20px;text-align:center">No logs found.</td></tr>';
+    } catch (e) {
+      // silent — log panel not yet selected or server not running
+    }
+  }
+
+  /* ── Init ─────────────────────────────────────────────── */
+  document.getElementById('targetUrl').textContent = TARGET;
+  loadLogs();
+</script>
+
+</body>
+</html>
