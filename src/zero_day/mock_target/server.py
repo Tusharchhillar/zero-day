@@ -13,6 +13,7 @@ import asyncio
 import collections
 import json
 import math
+import os
 import random
 import re
 import threading
@@ -29,6 +30,9 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from zero_day.contracts import FlowEvent
 
 app = FastAPI(title="ApexGov Enterprise Banking & GovCloud Gateway", version="2.0.0")
+
+# Backend engine base URL. Override with ZERO_DAY_API_URL env var (default port 8000).
+ZERO_DAY_API = os.environ.get("ZERO_DAY_API_URL", "http://localhost:8000")
 
 app.add_middleware(
     CORSMiddleware,
@@ -95,7 +99,7 @@ def _tap_flow(
             import urllib.request
             data = json.dumps(flow.model_dump(mode="json")).encode("utf-8")
             req = urllib.request.Request(
-                "http://localhost:8000/api/ingest/flow",
+                            f"{ZERO_DAY_API}/api/ingest/flow",
                 data=data,
                 headers={"Content-Type": "application/json"},
                 method="POST",
@@ -861,7 +865,7 @@ async def trigger_simulated_attack(attack_type: str, request: Request):
     try:
         await asyncio.to_thread(
             _fetch,
-            f"http://localhost:8000/api/replay/{replay_map.get(attack_type, 'benign')}",
+            f"{ZERO_DAY_API}/api/replay/{replay_map.get(attack_type, 'benign')}",
             method="POST",
         )
     except Exception:
