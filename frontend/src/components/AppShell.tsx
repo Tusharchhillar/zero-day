@@ -232,7 +232,7 @@ export function AppShell({
     const checkHealth = async () => {
       try {
         const host = window.location.hostname || 'localhost';
-        const res = await fetch(`http://${host}:8000/api/health`);
+        const res = await fetch(`http://${host}:9000/api/health`);
         if (mounted) setIsLive(res.ok);
       } catch {
         if (mounted) setIsLive(false);
@@ -285,7 +285,7 @@ export function AppShell({
               title={isLive ? 'Threatwave Engine Active' : 'Connecting to Threatwave Backend...'}
             >
               <span className="live-dot" />
-              <span>{isLive ? 'ENGINE ACTIVE (8000)' : isLive === false ? 'ENGINE OFFLINE' : 'CHECKING...'}</span>
+              <span>{isLive ? 'ENGINE ACTIVE (9000)' : isLive === false ? 'ENGINE OFFLINE' : 'CHECKING...'}</span>
             </div>
 
             <div style={{ position: 'relative' }}>

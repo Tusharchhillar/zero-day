@@ -9,10 +9,17 @@ export function LiveAlertList({ limit = 8, onSelect }: { limit?: number; onSelec
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    alertService.list().then((all) => {
-      setAlerts(all.slice(0, limit));
-      setLoading(false);
-    });
+    let mounted = true;
+    const load = () => {
+      alertService.list().then((all) => {
+        if (!mounted) return;
+        setAlerts(all.slice(0, limit));
+        setLoading(false);
+      });
+    };
+    load();
+    const interval = setInterval(load, 5000);
+    return () => { mounted = false; clearInterval(interval); };
   }, [limit]);
 
   if (loading) return <div className="skeleton skel-card" />;

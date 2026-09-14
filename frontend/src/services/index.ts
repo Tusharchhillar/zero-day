@@ -21,7 +21,12 @@ import { CATEGORY_KEYS } from '../lib/theme';
 // --- config ---------------------------------------------------------------
 const API_BASE: string =
   (import.meta as any).env?.VITE_API_BASE ??
-  `http://${window.location.hostname || 'localhost'}:8000`;
+  `http://${window.location.hostname || 'localhost'}:9000`;
+
+// Remote pentest target — overridable via VITE_TARGET_BASE (defaults to the
+// shared demo box that hosts the ApexGov mock banking portal).
+export const TARGET_BASE: string =
+  (import.meta as any).env?.VITE_TARGET_BASE ?? 'http://172.20.10.5:5000';
 
 // --- helpers --------------------------------------------------------------
 async function api<T>(path: string, init?: RequestInit): Promise<T | null> {
@@ -319,12 +324,14 @@ export const trafficService = {
   async stats(): Promise<TrafficStats> {
     const m = await api<any>('/api/metrics');
     if (m) {
+      const alertCount = m.alerts_emitted ?? 0;
+      const critical = (m.severity_distribution?.CRITICAL ?? 0);
       return {
         totalVolumeMbps: m.events_per_sec ? (m.events_per_sec * 500 * 8) / 1e6 : 0,
         flowCount: m.events_processed ?? 0,
-        packetCount: (m.events_processed ?? 0),
+        packetCount: alertCount,
         byteCount: (m.events_processed ?? 0) * 500 / 1e9,
-        activeFlows: 0,
+        activeFlows: critical,
         topSources: [
           { name: '10.0.0.50', value: m.events_per_sec ?? 0 },
           { name: '10.0.0.51', value: (m.events_per_sec ?? 0) * 0.6 },

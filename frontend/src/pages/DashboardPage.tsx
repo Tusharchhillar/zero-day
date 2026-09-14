@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Play, Square, Activity, Siren, BarChart3, Crosshair } from 'lucide-react';
 import type { StatCardData, Alert } from '../types';
@@ -10,7 +10,7 @@ import { ThreatActivity } from '../components/ThreatActivity';
 import { SystemHealth } from '../components/SystemHealth';
 import { AlertDetails } from '../components/AlertDetails';
 import { useToast } from '../components/Toast';
-import { trafficService, scenarioService } from '../services';
+import { trafficService, scenarioService, TARGET_BASE } from '../services';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -22,7 +22,7 @@ export function DashboardPage() {
   const [scenarios, setScenarios] = useState<{ name: string; description?: string }[] | null>(null);
   const [runningScenario, setRunningScenario] = useState<string | null>(null);
 
-  useEffect(() => {
+  const loadStats = useCallback(() => {
     trafficService.stats().then((s) => {
       setStats([
         { key: 'total', label: 'Total Traffic', value: `${s.totalVolumeMbps.toFixed(2)}`, support: 'Mbps aggregate', icon: 'activity', tone: 'neutral' },
@@ -33,11 +33,19 @@ export function DashboardPage() {
         { key: 'health', label: 'System Health', value: 'Healthy', support: 'All engines active', icon: 'heart', tone: 'healthy' },
       ]);
     });
-    scenarioService.list().then(setScenarios).catch(() => setScenarios([]));
   }, []);
+
+  useEffect(() => {
+    loadStats();
+    scenarioService.list().then(setScenarios).catch(() => setScenarios([]));
+    // Poll stats every 5s so the dashboard stays live without a manual refresh
+    const poll = setInterval(loadStats, 5000);
+    return () => clearInterval(poll);
+  }, [loadStats]);
 
   const refresh = () => {
     setRefreshing(true);
+    loadStats();
     setTimeout(() => { setLastUpdated(new Date()); setRefreshing(false); toast('success', 'Data refreshed.'); }, 700);
   };
 
@@ -140,7 +148,7 @@ export function DashboardPage() {
                   <Square size={12} /> Stop Replay
                 </button>
               )}
-              <a href="http://localhost:5000" target="_blank" rel="noreferrer" className="btn btn-sm btn-primary" style={{ textDecoration: 'none' }}>
+              <a href={TARGET_BASE} target="_blank" rel="noreferrer" className="btn btn-sm btn-primary" style={{ textDecoration: 'none' }}>
                 <Crosshair size={13} /> Pentest Mock Portal ↗
               </a>
               <button className="btn btn-sm" onClick={() => navigate('/alerts')}><Siren size={13} /> Alerts Queue</button>
