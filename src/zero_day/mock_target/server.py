@@ -191,8 +191,13 @@ async def passive_tap_middleware(request: Request, call_next):
     elif "admin" in path.lower() and "token" not in query_str:
         vuln_flag = "WEAK_AUTH_PING"
 
+    # Skip benign UI polling/health endpoints so they don't fake-attack the engine
+    benign_polls = {
+        "/api/logs", "/api/health", "/api/metrics", "/api/scenarios",
+        "/api/threads", "/api/sessions", "/api/dns/status",
+    }
     # Log to SQLite cold store (Tier 2) + emit flow to engine (Tier 1)
-    if not path.startswith("/sim/"):
+    if not path.startswith("/sim/") and path not in benign_polls:
         _tap_flow(
             src_ip=client_ip,
             dst_ip="192.168.1.100",
@@ -204,7 +209,7 @@ async def passive_tap_middleware(request: Request, call_next):
             duration_ms=duration_ms,
             flow_id=f"http-{int(time.time()*1000)}",
         )
-        _log_http(
+    _log_http(
             method=request.method,
             path=path,
             client_ip=client_ip,
@@ -483,13 +488,23 @@ PORTAL_HTML = """<!DOCTYPE html>
 
 <script>
   const term = document.getElementById('termOutput');
-  function showPage(id) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    document.querySelector(`.nav-link[data-page="${id}"]`).classList.add('active');
-    if (id === 'logs') loadLogs();
-  }
+    let logsInterval = null;
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      document.querySelector(`.nav-link[data-page="${id}"]`).classList.add('active');
+    
+      if (logsInterval) {
+        clearInterval(logsInterval);
+        logsInterval = null;
+      }
+
+      if (id === 'logs') {
+              loadLogs();
+              logsInterval = setInterval(loadLogs, 100);
+            }
+    }
   function log(msg) {
     const ts = new Date().toLocaleTimeString();
     term.innerHTML += `\n[${ts}] ${msg}`;
@@ -736,12 +751,12 @@ async def trigger_simulated_attack(attack_type: str, request: Request):
     vulnerability = ""
     import urllib.request as _urllib_req
 
-    def _fetch(url: str, data: bytes | None = None, method: str = "GET") -> None:
+    def _fetch(url: str, data: bytes | None = None, method: str = "GET", timeout: float = 1.0) -> None:
         """Blocking HTTP call — run inside thread via asyncio.to_thread."""
         req = _urllib_req.Request(url, data=data, method=method,
                                   headers={"Content-Type": "application/json"} if data else {})
         try:
-            _urllib_req.urlopen(req, timeout=1.0)
+            _urllib_req.urlopen(req, timeout=timeout)
         except _urllib_req.HTTPError:
             pass  # Expected for 4xx/5xx — we just need the request to reach the server
 
@@ -844,6 +859,7 @@ async def trigger_simulated_attack(attack_type: str, request: Request):
             _fetch,
             f"{ZERO_DAY_API}/api/replay/{replay_map.get(attack_type, 'benign')}",
             method="POST",
+            timeout=15.0,
         )
     except Exception:
         pass
